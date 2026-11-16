@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Asset } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { depositActualWeight } from "./deposit-ui";
-import { formatRupiah, formatWeight } from "./format";
+import { formatClock, formatDateMedium, formatRupiah, formatWeight } from "./format";
 import type { Deposit } from "./types";
 
 function Star({ filled }: { filled: boolean }) {
@@ -137,6 +137,15 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
               </li>
             ))}
           </ul>
+          <p className="flex items-center justify-between border-t border-[#edf0ee] pt-2 text-[13px] font-bold text-heading">
+            <span>Total nilai</span>
+            <span>{formatRupiah(deposit.finalTotal ?? 0)}</span>
+          </p>
+          <p className="mt-1 text-[12px] leading-[17px] text-[#718079]">
+            Dikonfirmasi {formatDateMedium(deposit.completedAt ?? deposit.submittedAt)},{" "}
+            {formatClock(deposit.completedAt ?? deposit.submittedAt)} · nilai = berat aktual × harga
+            saat konfirmasi.
+          </p>
         </section>
 
         <section
