@@ -1,4 +1,15 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { Asset } from "./asset";
+
+/** Area tombol aksi menempel di bawah layar (zona jempol) pada layar langkah. */
+export function StepActions({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 z-10 -mx-4 mt-auto flex flex-col gap-2 border-t border-line bg-surface px-5 pt-3 pb-4">
+      {children}
+    </div>
+  );
+}
 
 export interface StepHeaderProps {
   title: string;
@@ -10,30 +21,20 @@ export interface StepHeaderProps {
 
 export function StepHeader({ title, step, totalSteps, backHref }: StepHeaderProps) {
   return (
-    <header className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+    <header className="flex flex-col gap-[10px]">
+      <div className="flex items-center gap-[13px]">
         <Link
           href={backHref}
           aria-label="Kembali"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brown-light text-foreground transition-colors hover:bg-brown-light-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="block size-11 shrink-0 rounded-[15px] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          <svg
-            aria-hidden
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <Asset src="/nasabah/step-back.svg" width={44} height={44} />
         </Link>
-        <div className="flex min-w-0 flex-col">
-          <h1 className="truncate text-h4 text-foreground">{title}</h1>
-          <p className="text-caption text-muted">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="font-sans text-[18px] leading-[20px] font-medium tracking-[-0.275px] text-black">
+            {title}
+          </h1>
+          <p className="font-inter text-[12px] leading-[17px] font-medium tracking-[-0.275px] text-green-dark-active">
             Langkah {step} dari {totalSteps}
           </p>
         </div>
@@ -45,10 +46,10 @@ export function StepHeader({ title, step, totalSteps, backHref }: StepHeaderProp
         aria-valuemax={totalSteps}
         aria-valuenow={step}
         aria-valuetext={`Langkah ${step} dari ${totalSteps}`}
-        className="h-1.5 w-full overflow-hidden rounded-full bg-brown-light"
+        className="h-1 w-full overflow-hidden rounded-[2px] bg-brown-light"
       >
         <div
-          className="h-full rounded-full bg-primary transition-[width]"
+          className="h-full rounded-[2px] bg-primary transition-[width]"
           style={{ width: `${(step / totalSteps) * 100}%` }}
         />
       </div>

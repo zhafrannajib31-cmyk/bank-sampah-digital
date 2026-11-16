@@ -1,259 +1,212 @@
 import type { BankUnit, Deposit, NasabahProfile, WasteCategory } from "./types";
 
+// Data contoh (SIMULASI) mengikuti desain Figma "Prototype PWA".
 export const units: BankUnit[] = [
   {
     id: "unit-sukamaju",
-    name: "Bank Sampah Unit Sukamaju",
-    address: "Jl. Sukamaju No. 12, Kec. Cibeunying",
-    hours: "Senin–Sabtu, 08.00–15.00",
-    phone: "0812-3456-7890",
+    name: "BSU Sukamaju Hijau",
+    address: "Jl. Tamansari No. 12, Bandung",
+    hours: "Senin – Sabtu, 08.00 – 16.00 WIB",
+    shortHours: "08.00 – 16.00",
+    phone: "0812–0000–1122",
     distanceKm: 1.2,
     isOpen: true,
+    categoryIds: ["plastik", "kertas", "kardus", "logam"],
   },
   {
-    id: "unit-cendana",
-    name: "Bank Sampah Unit Cendana",
-    address: "Jl. Cendana Raya No. 5, Kec. Antapani",
-    hours: "Senin–Jumat, 09.00–16.00",
-    phone: "0812-9876-5432",
-    distanceKm: 2.4,
+    id: "unit-cibeunying",
+    name: "BSU Cibeunying Lestari",
+    address: "Jl. Cihampelas No. 88, Bandung",
+    hours: "Senin – Jumat, 09.00 – 15.00 WIB",
+    shortHours: "09.00 – 15.00",
+    phone: "0812–0000–3344",
+    distanceKm: 2.8,
     isOpen: true,
+    categoryIds: ["plastik", "kertas", "botol-kaca"],
   },
   {
-    id: "unit-melati",
-    name: "Bank Sampah Unit Melati",
-    address: "Jl. Melati No. 8, Kec. Lengkong",
-    hours: "Sabtu, 08.00–12.00",
-    phone: "0813-2222-1111",
-    distanceKm: 3.1,
+    id: "unit-dago",
+    name: "BSU Dago Asri",
+    address: "Jl. Ir. H. Juanda No. 45, Bandung",
+    hours: "Senin – Sabtu, 08.00 – 15.00 WIB",
+    shortHours: "Buka lagi besok 08.00",
+    phone: "0812–0000–5566",
+    distanceKm: 4.1,
     isOpen: false,
+    categoryIds: ["plastik", "kardus"],
+  },
+  {
+    id: "unit-antapani",
+    name: "BSU Antapani Bersih",
+    address: "Jl. Terusan Jakarta No. 7, Bandung",
+    hours: "Senin – Sabtu, 08.00 – 14.00 WIB",
+    shortHours: "08.00 – 14.00",
+    phone: "0812–0000–7788",
+    distanceKm: 5.6,
+    isOpen: true,
+    categoryIds: ["plastik", "kertas", "logam"],
   },
 ];
 
+/** Harga berlaku (simulasi) yang ditampilkan di Detail Bank Sampah. */
+export const PRICE_EFFECTIVE_DATE = "25 Okt 2026";
+
 export const categories: WasteCategory[] = [
-  {
-    id: "plastik-pet",
-    name: "Plastik PET",
-    pricePerKg: 3500,
-    note: "Botol plastik bening, bersih, tanpa tutup.",
-  },
-  {
-    id: "kertas-kardus",
-    name: "Kertas & Kardus",
-    pricePerKg: 2000,
-    note: "Kardus kering dan dilipat rapi.",
-  },
-  {
-    id: "kaleng-aluminium",
-    name: "Kaleng Aluminium",
-    pricePerKg: 12000,
-    note: "Kaleng minuman bersih dan tidak penyok berat.",
-  },
-  {
-    id: "botol-kaca",
-    name: "Botol Kaca",
-    pricePerKg: 1000,
-    note: "Botol kaca utuh, tidak pecah, dan sudah dicuci.",
-  },
+  { id: "plastik", name: "Plastik", pricePerKg: 4000, note: "Botol, gelas, kantong plastik" },
+  { id: "kertas", name: "Kertas", pricePerKg: 3000, note: "Koran, HVS, majalah" },
+  { id: "kardus", name: "Kardus", pricePerKg: 2500, note: "Kardus makanan, paket, box" },
+  { id: "logam", name: "Logam", pricePerKg: 8000, note: "Besi, kaleng, plat nomor" },
+  { id: "botol-kaca", name: "Botol Kaca", pricePerKg: 3500, note: "Kecap, sirup, toples kaca" },
+  { id: "elektronik", name: "Elektronik", pricePerKg: null, note: "PCB, HP, Kabel, Aki" },
 ];
 
 export const profile: NasabahProfile = {
-  name: "Siti Rahma",
-  phone: "0812-3456-7890",
-  email: "siti.rahma@contoh.id",
-  address: "Jl. Kenanga No. 21, Bandung",
-  memberSince: "2026-08-14T00:00:00+07:00",
+  name: "Aden Arya Dimas Fauzan",
+  phone: "+62 812 3456 7890",
+  email: "aden@gmail.com",
+  address: "Bandung",
+  memberSince: "2026-09-01T00:00:00+07:00",
 };
 
+/** "Hari ini" pada data contoh (simulasi). */
+export const SEED_TODAY = "2026-10-25";
+
+const priceOf = (categoryId: string) =>
+  categories.find((c) => c.id === categoryId)?.pricePerKg ?? 0;
+const nameOf = (categoryId: string) =>
+  categories.find((c) => c.id === categoryId)?.name ?? categoryId;
+
+/** Item setoran data contoh: nilai dihitung dari berat x harga (simulasi sisi server). */
+function seedItem(depositId: string, categoryId: string, estimated: number, actual?: number) {
+  const price = priceOf(categoryId);
+  return {
+    id: `${depositId}-${categoryId}`,
+    categoryId,
+    categoryName: nameOf(categoryId),
+    estimatedWeight: estimated,
+    estimatedValue: Math.round(estimated * price),
+    ...(actual === undefined
+      ? {}
+      : {
+          actualWeight: actual,
+          unitPriceSnapshot: price,
+          finalValue: Math.round(actual * price),
+        }),
+  };
+}
+
+function seedDeposit(
+  code: string,
+  unitId: string,
+  status: Deposit["status"],
+  submittedAt: string,
+  rows: [string, number, number?][],
+  extra: Partial<Deposit> = {},
+): Deposit {
+  const unit = units.find((candidate) => candidate.id === unitId)!;
+  const id = `dep-${code.toLowerCase().replace("set-", "")}`;
+  const items = rows.map(([categoryId, estimated, actual]) =>
+    seedItem(id, categoryId, estimated, actual),
+  );
+  const weighed = items.every((item) => item.finalValue !== undefined);
+  return {
+    id,
+    code,
+    unitId,
+    unitName: unit.name,
+    unitAddress: unit.address,
+    status,
+    submittedAt,
+    estimatedTotal: items.reduce((sum, item) => sum + item.estimatedValue, 0),
+    finalTotal:
+      status === "selesai" && weighed
+        ? items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0)
+        : undefined,
+    items,
+    events: [{ id: `${id}-e1`, at: submittedAt, title: "Pengajuan dibuat" }],
+    ...extra,
+  };
+}
+
 export const seedDeposits: Deposit[] = [
-  {
-    id: "dep-2026-0018",
-    code: "BSD-2026-0018",
-    unitId: "unit-sukamaju",
-    unitName: "Bank Sampah Unit Sukamaju",
-    unitAddress: "Jl. Sukamaju No. 12, Kec. Cibeunying",
-    status: "menunggu",
-    submittedAt: "2026-11-12T08:15:00+07:00",
-    estimatedTotal: 18000,
-    items: [
-      {
-        id: "dep-2026-0018-item-1",
-        categoryId: "kaleng-aluminium",
-        categoryName: "Kaleng Aluminium",
-        estimatedWeight: 1.5,
-        estimatedValue: 18000,
-      },
+  seedDeposit("SET-251025-0195", "unit-sukamaju", "menunggu", "2026-10-25T11:05:00+07:00", [
+    ["logam", 2.0],
+  ]),
+  // Diproses: sudah ditimbang petugas, menunggu pemindaian QR dan konfirmasi.
+  seedDeposit(
+    "SET-251025-0193",
+    "unit-cibeunying",
+    "diproses",
+    "2026-10-25T09:50:00+07:00",
+    [["kertas", 3.0, 3.1]],
+    { officerName: "Andi Pratama" },
+  ),
+  seedDeposit(
+    "SET-251025-0192",
+    "unit-sukamaju",
+    "selesai",
+    "2026-10-25T08:40:00+07:00",
+    [
+      ["plastik", 5.0, 5.2],
+      ["kardus", 3.0, 3.0],
     ],
-    events: [
-      {
-        id: "dep-2026-0018-event-1",
-        at: "2026-11-12T08:15:00+07:00",
-        title: "Pengajuan dibuat",
-        description: "Menunggu sampah diantar ke unit Sukamaju.",
-      },
+    { completedAt: "2026-10-25T10:20:00+07:00", officerName: "Andi Pratama" },
+  ),
+  seedDeposit(
+    "SET-251018-0171",
+    "unit-sukamaju",
+    "selesai",
+    "2026-10-18T10:00:00+07:00",
+    [["kertas", 4.0, 4.0]],
+    {
+      completedAt: "2026-10-18T11:10:00+07:00",
+      officerName: "Andi Pratama",
+    },
+  ),
+  seedDeposit(
+    "SET-0194",
+    "unit-sukamaju",
+    "dibatalkan",
+    "2026-10-14T09:15:00+07:00",
+    [["kardus", 2.0]],
+    {
+      cancellationReason: "Sampah bercampur limbah B3",
+      cancelledAt: "2026-10-14T10:20:00+07:00",
+      cancelledBy: "Petugas Unit (Andi Pratama)",
+    },
+  ),
+  seedDeposit(
+    "SET-251010-0143",
+    "unit-cibeunying",
+    "selesai",
+    "2026-10-10T13:00:00+07:00",
+    [["botol-kaca", 6.0, 6.0]],
+    {
+      completedAt: "2026-10-10T14:05:00+07:00",
+      officerName: "Rina Kusuma",
+    },
+  ),
+  seedDeposit(
+    "SET-251003-0120",
+    "unit-sukamaju",
+    "selesai",
+    "2026-10-03T08:30:00+07:00",
+    [["plastik", 5.5, 5.5]],
+    {
+      completedAt: "2026-10-03T09:30:00+07:00",
+      officerName: "Andi Pratama",
+    },
+  ),
+  seedDeposit(
+    "SET-250918-0088",
+    "unit-sukamaju",
+    "selesai",
+    "2026-09-18T09:00:00+07:00",
+    [
+      ["logam", 4.0, 4.0],
+      ["kertas", 2.0, 1.9],
+      ["kardus", 1.5, 1.6],
     ],
-  },
-  {
-    id: "dep-2026-0015",
-    code: "BSD-2026-0015",
-    unitId: "unit-sukamaju",
-    unitName: "Bank Sampah Unit Sukamaju",
-    unitAddress: "Jl. Sukamaju No. 12, Kec. Cibeunying",
-    status: "diproses",
-    submittedAt: "2026-11-11T16:40:00+07:00",
-    estimatedTotal: 14000,
-    items: [
-      {
-        id: "dep-2026-0015-item-1",
-        categoryId: "plastik-pet",
-        categoryName: "Plastik PET",
-        estimatedWeight: 4,
-        estimatedValue: 14000,
-      },
-    ],
-    events: [
-      {
-        id: "dep-2026-0015-event-1",
-        at: "2026-11-11T16:40:00+07:00",
-        title: "Pengajuan dibuat",
-        description: "Nasabah mengajukan setoran 4 kg Plastik PET.",
-      },
-      {
-        id: "dep-2026-0015-event-2",
-        at: "2026-11-12T09:05:00+07:00",
-        title: "Sampah diterima di unit",
-        description: "Petugas menerima sampah dan mulai memeriksa kondisi.",
-      },
-      {
-        id: "dep-2026-0015-event-3",
-        at: "2026-11-12T09:20:00+07:00",
-        title: "Sedang ditimbang",
-        description: "Berat aktual akan menjadi dasar nilai final.",
-      },
-    ],
-  },
-  {
-    id: "dep-2026-0012",
-    code: "BSD-2026-0012",
-    unitId: "unit-sukamaju",
-    unitName: "Bank Sampah Unit Sukamaju",
-    unitAddress: "Jl. Sukamaju No. 12, Kec. Cibeunying",
-    status: "selesai",
-    submittedAt: "2026-11-08T09:20:00+07:00",
-    estimatedTotal: 17500,
-    finalTotal: 14200,
-    items: [
-      {
-        id: "dep-2026-0012-item-1",
-        categoryId: "plastik-pet",
-        categoryName: "Plastik PET",
-        estimatedWeight: 3,
-        estimatedValue: 10500,
-        actualWeight: 2.8,
-        unitPriceSnapshot: 3500,
-        finalValue: 9800,
-      },
-      {
-        id: "dep-2026-0012-item-2",
-        categoryId: "kertas-kardus",
-        categoryName: "Kertas & Kardus",
-        estimatedWeight: 2,
-        estimatedValue: 4000,
-        actualWeight: 2.2,
-        unitPriceSnapshot: 2000,
-        finalValue: 4400,
-      },
-    ],
-    events: [
-      {
-        id: "dep-2026-0012-event-1",
-        at: "2026-11-08T09:20:00+07:00",
-        title: "Pengajuan dibuat",
-        description: "Estimasi 5 kg dari 2 jenis sampah.",
-      },
-      {
-        id: "dep-2026-0012-event-2",
-        at: "2026-11-08T10:10:00+07:00",
-        title: "Sampah diterima dan ditimbang",
-        description: "Berat aktual 2,8 kg Plastik PET dan 2,2 kg Kertas & Kardus.",
-      },
-      {
-        id: "dep-2026-0012-event-3",
-        at: "2026-11-08T10:25:00+07:00",
-        title: "Transaksi selesai",
-        description: "Petugas mengonfirmasi nilai final Rp14.200.",
-      },
-    ],
-  },
-  {
-    id: "dep-2026-0009",
-    code: "BSD-2026-0009",
-    unitId: "unit-cendana",
-    unitName: "Bank Sampah Unit Cendana",
-    unitAddress: "Jl. Cendana Raya No. 5, Kec. Antapani",
-    status: "dibatalkan",
-    submittedAt: "2026-11-03T10:05:00+07:00",
-    estimatedTotal: 3000,
-    cancellationReason: "Sampah tercampur dan tidak memenuhi kriteria unit.",
-    items: [
-      {
-        id: "dep-2026-0009-item-1",
-        categoryId: "botol-kaca",
-        categoryName: "Botol Kaca",
-        estimatedWeight: 3,
-        estimatedValue: 3000,
-      },
-    ],
-    events: [
-      {
-        id: "dep-2026-0009-event-1",
-        at: "2026-11-03T10:05:00+07:00",
-        title: "Pengajuan dibuat",
-        description: "Estimasi 3 kg Botol Kaca.",
-      },
-      {
-        id: "dep-2026-0009-event-2",
-        at: "2026-11-03T10:30:00+07:00",
-        title: "Pengajuan dibatalkan",
-        description: "Sampah tercampur dan tidak memenuhi kriteria unit.",
-      },
-    ],
-  },
-  {
-    id: "dep-2026-0008",
-    code: "BSD-2026-0008",
-    unitId: "unit-cendana",
-    unitName: "Bank Sampah Unit Cendana",
-    unitAddress: "Jl. Cendana Raya No. 5, Kec. Antapani",
-    status: "selesai",
-    submittedAt: "2026-10-28T14:10:00+07:00",
-    estimatedTotal: 10000,
-    finalTotal: 10000,
-    items: [
-      {
-        id: "dep-2026-0008-item-1",
-        categoryId: "kertas-kardus",
-        categoryName: "Kertas & Kardus",
-        estimatedWeight: 5,
-        estimatedValue: 10000,
-        actualWeight: 5,
-        unitPriceSnapshot: 2000,
-        finalValue: 10000,
-      },
-    ],
-    events: [
-      {
-        id: "dep-2026-0008-event-1",
-        at: "2026-10-28T14:10:00+07:00",
-        title: "Pengajuan dibuat",
-        description: "Estimasi 5 kg Kertas & Kardus.",
-      },
-      {
-        id: "dep-2026-0008-event-2",
-        at: "2026-10-28T15:00:00+07:00",
-        title: "Transaksi selesai",
-        description: "Berat aktual sesuai estimasi; nilai final Rp10.000.",
-      },
-    ],
-  },
+    { completedAt: "2026-09-18T10:15:00+07:00", officerName: "Andi Pratama" },
+  ),
 ];

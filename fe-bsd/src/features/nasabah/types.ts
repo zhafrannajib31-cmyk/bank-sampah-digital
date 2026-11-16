@@ -5,15 +5,19 @@ export interface BankUnit {
   name: string;
   address: string;
   hours: string;
+  /** Ringkas untuk kartu daftar, mis. 08.00 – 16.00 atau Buka lagi besok 08.00. */
+  shortHours: string;
   phone: string;
   distanceKm: number;
   isOpen: boolean;
+  categoryIds: string[];
 }
 
 export interface WasteCategory {
   id: string;
   name: string;
-  pricePerKg: number;
+  /** null = harga mengikuti jenis, ditentukan petugas (mis. Elektronik). */
+  pricePerKg: number | null;
   note: string;
 }
 
@@ -56,6 +60,10 @@ export interface Deposit {
   estimatedTotal: number;
   finalTotal?: number;
   cancellationReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  completedAt?: string;
+  officerName?: string;
   items: DepositItem[];
   events: DepositEvent[];
 }

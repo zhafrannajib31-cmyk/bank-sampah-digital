@@ -1,0 +1,20 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="180" height="28" viewBox="0 0 180 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Nilai empat bintang" clip-path="url(#clip0_0_4)">
+<path id="Bintang penilaian" d="M14 0L17.8769 9.408L28 10.416L20.2462 17.36L22.6154 28L14 22.4L5.38462 28L7.75385 17.36L0 10.416L10.1231 9.408L14 0Z" fill="#E5A000"/>
+<path id="Bintang penilaian_2" d="M52 0L55.8769 9.408L66 10.416L58.2462 17.36L60.6154 28L52 22.4L43.3846 28L45.7538 17.36L38 10.416L48.1231 9.408L52 0Z" fill="#E5A000"/>
+<path id="Bintang penilaian_3" d="M90 0L93.8769 9.408L104 10.416L96.2462 17.36L98.6154 28L90 22.4L81.3846 28L83.7538 17.36L76 10.416L86.1231 9.408L90 0Z" fill="#E5A000"/>
+<path id="Bintang penilaian_4" d="M128 0L131.877 9.408L142 10.416L134.246 17.36L136.615 28L128 22.4L119.385 28L121.754 17.36L114 10.416L124.123 9.408L128 0Z" fill="#E5A000"/>
+<g id="Bintang penilaian_5">
+<path d="M166 0L169.877 9.408L180 10.416L172.246 17.36L174.615 28L166 22.4L157.385 28L159.754 17.36L152 10.416L162.123 9.408L166 0Z" fill="white"/>
+<mask id="stroke0_0_4" fill="white">
+<path d="M166 0L169.877 9.408L180 10.416L172.246 17.36L174.615 28L166 22.4L157.385 28L159.754 17.36L152 10.416L162.123 9.408L166 0Z"/>
+</mask>
+<path d="M166 0L169.877 9.408L180 10.416L172.246 17.36L174.615 28L166 22.4L157.385 28L159.754 17.36L152 10.416L162.123 9.408L166 0Z" stroke-width="5" stroke="#CAD9D0" mask="url(#stroke0_0_4)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_4">
+<rect width="180" height="28" fill="white"/>
+</clipPath>
+</defs>
+</svg>

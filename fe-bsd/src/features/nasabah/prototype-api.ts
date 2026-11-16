@@ -4,7 +4,7 @@ export interface EstimateItem {
   categoryId: string;
   categoryName: string;
   estimatedWeight: number;
-  pricePerKg: number;
+  pricePerKg: number | null;
   estimatedValue: number;
 }
 
@@ -30,7 +30,7 @@ export function calculateEstimate(draft: DepositDraft, categories: WasteCategory
       categoryName: category.name,
       estimatedWeight: item.estimatedWeight,
       pricePerKg: category.pricePerKg,
-      estimatedValue: Math.round(item.estimatedWeight * category.pricePerKg),
+      estimatedValue: Math.round(item.estimatedWeight * (category.pricePerKg ?? 0)),
     };
   });
 

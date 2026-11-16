@@ -2,228 +2,209 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Asset,
   EmptyState,
   ErrorState,
   LoadingState,
+  StepActions,
+  StepHeader,
   buttonClasses,
 } from "@/components/ui";
-import { clearDraft, getDraftSnapshot, parseDraft } from "@/features/nasabah/draft";
+import { CategoryTile } from "@/features/nasabah/category-tile";
+import { clearDraft, isDraftComplete, useDraft } from "@/features/nasabah/draft";
 import { formatRupiah, formatWeight } from "@/features/nasabah/format";
-import { PrototypeNotice } from "@/features/nasabah/prototype-notice";
 import { calculateEstimate } from "@/features/nasabah/prototype-api";
 import { usePrototype } from "@/features/nasabah/prototype-store";
-
-const subscribeDraft = () => () => {};
-const subscribeClient = () => () => {};
+import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
+import { newIdempotencyKey, userMessage } from "@/lib/api";
 
 export default function RingkasanSetoranPage() {
   const router = useRouter();
   const { units, categories, submitDeposit } = usePrototype();
-
-  const isClient = useSyncExternalStore(
-    subscribeClient,
-    () => true,
-    () => false,
-  );
-  const draftRaw = useSyncExternalStore(subscribeDraft, getDraftSnapshot, () => null);
-  const draft = useMemo(() => parseDraft(draftRaw), [draftRaw]);
-
+  const { draft, ready } = useDraft();
+  // Satu kunci per kunjungan layar ini; dipakai ulang saat "Coba lagi" agar tidak ganda.
+  const [idempotencyKey] = useState(newIdempotencyKey);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const unit = draft ? units.find((candidate) => candidate.id === draft.unitId) : undefined;
+  // Simulasi sisi server (prototype); di aplikasi nyata nilai datang dari respons API.
+  const estimate = useMemo(
+    () => (draft && isDraftComplete(draft) ? calculateEstimate(draft, categories) : null),
+    [categories, draft],
+  );
+  const backHref = draft ? `/nasabah/setor/${draft.unitId}/metode` : "/nasabah/setor";
 
-  const estimate = useMemo(() => {
-    if (!draft) return null;
-
-    try {
-      return calculateEstimate(draft, categories);
-    } catch {
-      return null;
-    }
-  }, [categories, draft]);
-
-  async function handleSubmit(): Promise<void> {
+  async function handleSubmit() {
     if (!draft) return;
-
     setSubmitting(true);
     setError(null);
-
     try {
-      const deposit = await submitDeposit(draft);
+      const deposit = await submitDeposit(draft, idempotencyKey);
       clearDraft();
       router.push(`/nasabah/setoran/${deposit.id}`);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Pengajuan gagal dibuat. Silakan coba lagi.",
-      );
+      setError(userMessage(cause));
       setSubmitting(false);
     }
   }
 
-  if (!isClient) {
-    return <LoadingState label="Menyiapkan ringkasan setoran…" />;
+  const header = (
+    <StepHeader title="Konfirmasi Setoran" step={5} totalSteps={5} backHref={backHref} />
+  );
+
+  if (!ready) {
+    return (
+      <StepScreen>
+        {header}
+        <LoadingState label="Menyiapkan ringkasan…" />
+      </StepScreen>
+    );
   }
 
   if (!draft || !unit || !estimate) {
     return (
-      <EmptyState
-        title="Belum ada data setoran"
-        description="Data ringkasan tidak ditemukan. Mulai pengajuan baru dari halaman setor."
-        action={
-          <Link href="/nasabah/setor" className={buttonClasses({ size: "sm" })}>
-            Mulai setor
-          </Link>
-        }
-      />
+      <StepScreen>
+        {header}
+        <EmptyState
+          title="Belum ada data setoran"
+          description="Mulai pengajuan baru dari halaman setor."
+          action={
+            <Link href="/nasabah/setor" className={buttonClasses({ size: "sm" })}>
+              Mulai setor
+            </Link>
+          }
+        />
+      </StepScreen>
     );
   }
 
+  const totalWeight = estimate.items.reduce((sum, item) => sum + item.estimatedWeight, 0);
+
   return (
-    <div className="flex flex-col gap-5">
-      <PrototypeNotice />
+    <StepScreen>
+      {header}
 
-      <header className="flex flex-col gap-1">
-        <p className="text-body-sm font-semibold text-accent">Langkah 3 dari 3</p>
-        <h1 className="text-h2 text-foreground">Ringkasan estimasi</h1>
-        <p className="text-body text-muted">
-          Periksa kembali data berikut sebelum mengirim pengajuan.
+      <section aria-labelledby="disetor" className="flex flex-col gap-[10px]">
+        <h2
+          id="disetor"
+          className="text-[14px] leading-[16.5px] font-medium tracking-[-0.275px] text-black"
+        >
+          Sampah yang Disetorkan
+        </h2>
+        <p className="text-[12px] leading-[17px] text-black/70">
+          Antar sendiri ke <span className="font-semibold text-black">{unit.name}</span>
         </p>
-      </header>
-
-      <Card className="border-blue-light-active bg-blue-light">
-        <CardHeader>
-          <p className="text-body-sm font-semibold text-blue-darker">Unit tujuan</p>
-          <p className="text-body font-semibold text-blue-darker">{unit.name}</p>
-          <p className="text-body-sm text-blue-darker/80">{unit.address}</p>
-          <p className="text-body-sm text-blue-darker/80">{unit.hours}</p>
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <CardTitle>Rincian estimasi</CardTitle>
-            <Badge variant="warning">Bukan nilai final</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-[10px]">
           {estimate.items.map((item) => (
-            <div
+            <li
               key={item.categoryId}
-              className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0"
+              className="flex h-[70px] items-center gap-3 rounded-[20px] border-[0.1px] border-black bg-white px-3 shadow-[0_4px_4px_rgba(0,0,0,0.1)]"
             >
-              <div className="flex flex-col gap-0.5">
-                <p className="text-body font-semibold text-foreground">{item.categoryName}</p>
-                <p className="text-body-sm text-muted">
-                  {formatWeight(item.estimatedWeight)} × {formatRupiah(item.pricePerKg)}/kg
+              <CategoryTile id={item.categoryId} />
+              <div className="flex flex-1 flex-col gap-[6px]">
+                <p className="text-[14px] leading-[16.5px] font-medium tracking-[-0.275px] text-black">
+                  {item.categoryName}
+                </p>
+                <p className="w-fit rounded-[10px] bg-black/10 px-2 text-[12px] leading-[17px] font-medium text-black">
+                  {formatWeight(item.estimatedWeight)}
                 </p>
               </div>
-              <p className="text-body font-semibold text-foreground">
-                {formatRupiah(item.estimatedValue)}
-              </p>
-            </div>
+              <div className="flex flex-col items-end gap-1">
+                <p className="text-[12px] leading-[17px] text-black/80">
+                  {item.pricePerKg === null
+                    ? "Sesuai jenis"
+                    : `${formatRupiah(item.pricePerKg)}/kg`}
+                </p>
+                <p className="text-[14px] leading-[16.5px] font-medium text-green-dark-active">
+                  {item.pricePerKg === null
+                    ? "Ditentukan petugas"
+                    : formatRupiah(item.estimatedValue)}
+                </p>
+              </div>
+            </li>
           ))}
+        </ul>
+      </section>
 
-          <div className="flex items-end justify-between gap-3 pt-1">
-            <p className="text-body font-semibold text-foreground">Total estimasi</p>
-            <p className="text-h3 text-foreground">{formatRupiah(estimate.total)}</p>
+      <section
+        aria-label="Estimasi setoran"
+        className="flex flex-col gap-3 rounded-[20px] border-[0.1px] border-black bg-white p-3 shadow-[0_4px_4px_rgba(0,0,0,0.1)]"
+      >
+        <div className="flex items-center justify-between">
+          <p className="rounded-[5px] bg-blue-light px-[9px] text-[12px] leading-[17px] font-light text-black">
+            ESTIMASI SETORAN
+          </p>
+          <p className="text-[12px] leading-[17px] font-medium text-black/70">
+            {estimate.items.length} Kategori
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-[14px]">
+          <div className="flex flex-col gap-[6px] rounded-[5px] bg-blue-light p-[10px]">
+            <p className="text-[12px] leading-[17px] font-medium text-black">Total Berat</p>
+            <p className="text-[16px] leading-[16.5px] font-extrabold text-black">
+              {formatWeight(totalWeight)}
+            </p>
+            <p className="text-[12px] leading-[17px] font-light text-black">Est. berat</p>
           </div>
-
-          <div className="rounded-lg bg-brown-light px-3 py-2 text-body-sm text-brown-darker">
-            Nilai ini hanya estimasi. Nilai final dihitung petugas dari berat aktual saat
-            penimbangan dan harga yang berlaku saat konfirmasi.
+          <div className="flex flex-col gap-[6px] rounded-[5px] bg-blue-light p-[10px]">
+            <p className="text-[12px] leading-[17px] font-medium text-black">Perkiraan Nilai</p>
+            <p className="text-[16px] leading-[16.5px] font-extrabold text-green-dark-active">
+              {formatRupiah(estimate.total)}
+            </p>
+            <p className="text-[12px] leading-[17px] font-light text-black">
+              Estimasi nominal awal
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <p className="flex items-start gap-2 text-[12px] leading-[17px] font-light text-black">
+          <span className="mt-[3px]">
+            <Asset src="/nasabah/note-info-sm.svg" width={10} height={10} />
+          </span>
+          Angka di atas masih perkiraan sebelum ditimbang.
+        </p>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Setelah pengajuan dikirim</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <NextStep
-            number="1"
-            title="Antar sampah sendiri ke unit"
-            description="Tunjukkan kode pengajuan kepada petugas saat tiba."
+      <section className="flex gap-4 rounded-[20px] bg-blue-light-active p-[14px]">
+        <span className="relative flex size-[33px] shrink-0 items-center justify-center self-start">
+          <Asset
+            src="/nasabah/note-circle.svg"
+            width={33}
+            height={33}
+            className="absolute inset-0"
           />
-          <NextStep
-            number="2"
-            title="Petugas memeriksa dan menimbang"
-            description="Berat aktual dapat berbeda dari estimasi Anda."
+          <Asset
+            src="/nasabah/note-info.svg"
+            width={19.249}
+            height={19.7185}
+            className="relative"
           />
-          <NextStep
-            number="3"
-            title="Nilai final muncul setelah konfirmasi"
-            description="Transaksi berstatus Selesai setelah petugas mengonfirmasi."
-          />
-        </CardContent>
-      </Card>
+        </span>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-[14px] leading-[16.5px] font-medium text-black">
+            Catatan Penimbangan
+          </h2>
+          <p className="text-[12px] leading-[17px] font-light text-black">
+            Berat dan nilai di atas masih estimasi. Nilai akhir dihitung setelah ditimbang petugas.
+          </p>
+        </div>
+      </section>
 
       {error ? (
         <ErrorState
-          title="Pengajuan gagal dibuat"
+          title="Pengajuan gagal dikirim"
           description={error}
-          onRetry={() => {
-            void handleSubmit();
-          }}
+          onRetry={() => void handleSubmit()}
         />
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <Button
-          type="button"
-          size="lg"
-          className="w-full"
-          isLoading={submitting}
-          loadingText="Mengirim pengajuan…"
-          onClick={() => {
-            void handleSubmit();
-          }}
-        >
-          Konfirmasi pengajuan
-        </Button>
-        <Link
-          href={`/nasabah/setor/${unit.id}`}
-          className={buttonClasses({
-            variant: "ghost",
-            size: "md",
-            className: "w-full",
-          })}
-        >
-          Ubah jenis atau berat
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function NextStep({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex gap-3">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-body-sm font-bold text-accent-strong">
-        {number}
-      </span>
-      <div className="flex flex-col gap-0.5">
-        <p className="text-body font-semibold text-foreground">{title}</p>
-        <p className="text-body-sm text-muted">{description}</p>
-      </div>
-    </div>
+      <StepActions>
+        <StepNext arrow={false} disabled={submitting} onClick={() => void handleSubmit()}>
+          {submitting ? "Mengirim pengajuan…" : "Konfirmasi Setoran"}
+        </StepNext>
+      </StepActions>
+    </StepScreen>
   );
 }

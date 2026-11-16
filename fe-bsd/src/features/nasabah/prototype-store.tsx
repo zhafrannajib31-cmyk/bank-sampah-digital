@@ -29,7 +29,7 @@ interface PrototypeContextValue {
   profile: NasabahProfile;
   units: BankUnit[];
   categories: WasteCategory[];
-  submitDeposit: (draft: DepositDraft) => Promise<Deposit>;
+  submitDeposit: (draft: DepositDraft, idempotencyKey?: string) => Promise<Deposit>;
   updateProfile: (profile: NasabahProfile) => Promise<void>;
   resetPrototype: () => void;
 }
@@ -44,6 +44,7 @@ const serverState: PersistedState = {
 let cachedRaw: string | null | undefined;
 let cachedState: PersistedState = serverState;
 const listeners = new Set<() => void>();
+const submittedByKey = new Map<string, Deposit>();
 
 function readRaw(): string | null {
   if (typeof window === "undefined") return null;
@@ -120,8 +121,12 @@ function writeState(nextState: PersistedState): void {
 export function PrototypeProvider({ children }: { children: ReactNode }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const submitDeposit = useCallback(async (draft: DepositDraft) => {
+  const submitDeposit = useCallback(async (draft: DepositDraft, idempotencyKey?: string) => {
     await delay(650);
+
+    // Kunci yang sama mengembalikan pengajuan yang sama (retry aman, tidak ganda).
+    const existing = idempotencyKey ? submittedByKey.get(idempotencyKey) : undefined;
+    if (existing) return existing;
 
     const current = getSnapshot();
     const deposit = buildDeposit({
@@ -136,6 +141,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       profile: current.profile,
     });
 
+    if (idempotencyKey) submittedByKey.set(idempotencyKey, deposit);
     return deposit;
   }, []);
 

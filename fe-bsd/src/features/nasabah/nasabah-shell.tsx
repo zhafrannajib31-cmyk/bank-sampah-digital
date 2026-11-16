@@ -1,42 +1,46 @@
-import Link from "next/link";
-import { Suspense, type ReactNode } from "react";
-import { Badge } from "@/components/ui";
-import { LogoutButton } from "@/features/auth/logout-button";
-import { NasabahNav, NasabahNavFallback } from "./nasabah-nav";
+import type { ReactNode } from "react";
+import { APP_NAV_CONTENT_CLASS, AppNav, Asset, type AppNavItem } from "@/components/ui";
 
+const navItems: AppNavItem[] = [
+  {
+    href: "/nasabah",
+    label: "Beranda",
+    exact: true,
+    icon: <Asset src="/nasabah/nav-beranda.svg" width={13.3333} height={15} />,
+    activeIcon: <Asset src="/nasabah/nav-beranda-active.svg" width={13.3333} height={15} />,
+  },
+  {
+    href: "/nasabah/riwayat",
+    label: "Riwayat",
+    icon: <Asset src="/nasabah/nav-riwayat.svg" width={16.5} height={18.3333} />,
+    activeIcon: <Asset src="/nasabah/nav-riwayat-active.svg" width={16.5} height={18.3333} />,
+  },
+  {
+    href: "/nasabah/setor",
+    label: "Setor",
+    center: true,
+    icon: <Asset src="/nasabah/nav-setor.svg" width={56} height={56} />,
+  },
+  {
+    href: "/nasabah/saldo",
+    label: "Saldo",
+    icon: <Asset src="/nasabah/nav-saldo.svg" width={24} height={24} />,
+    activeIcon: <Asset src="/nasabah/nav-saldo-active.svg" width={24} height={24} />,
+  },
+  {
+    href: "/nasabah/profil",
+    label: "Profil",
+    icon: <Asset src="/nasabah/nav-profil.svg" width={14.6667} height={14.6667} />,
+    activeIcon: <Asset src="/nasabah/nav-profil-active.svg" width={14.6667} height={14.6667} />,
+  },
+];
+
+/** Layar utama nasabah (Beranda, Riwayat, Saldo, Profil): tiap layar punya header sendiri, menu bawah / rail dipakai bersama. */
 export function NasabahShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-surface-muted/40">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/nasabah" className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-full bg-primary text-body-sm font-bold text-foreground">
-              BS
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-body-sm font-semibold text-foreground">
-                Bank Sampah Digital
-              </span>
-              <span className="text-caption text-muted">Ruang nasabah</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Badge variant="info">Prototype</Badge>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-5 pb-28">{children}</main>
-
-      <nav
-        aria-label="Navigasi utama"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface"
-      >
-        <Suspense fallback={<NasabahNavFallback />}>
-          <NasabahNav />
-        </Suspense>
-      </nav>
+    <div className={`min-h-dvh bg-canvas font-inter ${APP_NAV_CONTENT_CLASS}`}>
+      {children}
+      <AppNav items={navItems} />
     </div>
   );
 }

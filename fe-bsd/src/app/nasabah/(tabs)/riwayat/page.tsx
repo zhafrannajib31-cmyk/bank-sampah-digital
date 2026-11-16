@@ -2,84 +2,94 @@
 
 import { useState } from "react";
 import { EmptyState } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import { DepositCard } from "@/features/nasabah/deposit-card";
-import { PrototypeNotice } from "@/features/nasabah/prototype-notice";
+import { DepositEntry, GroupLabel, isToday } from "@/features/nasabah/deposit-ui";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import type { DepositStatus } from "@/features/nasabah/types";
+import { cn } from "@/lib/cn";
 
-type FilterValue = "semua" | DepositStatus;
+type Filter = "semua" | Exclude<DepositStatus, "dibatalkan">;
 
-const filters: { value: FilterValue; label: string }[] = [
-  { value: "semua", label: "Semua" },
-  { value: "menunggu", label: "Menunggu" },
-  { value: "diproses", label: "Diproses" },
-  { value: "selesai", label: "Selesai" },
-  { value: "dibatalkan", label: "Dibatalkan" },
+const filters: { id: Filter; label: string }[] = [
+  { id: "semua", label: "Semua" },
+  { id: "menunggu", label: "Menunggu" },
+  { id: "diproses", label: "Diproses" },
+  { id: "selesai", label: "Selesai" },
 ];
 
 export default function RiwayatPage() {
   const { deposits } = usePrototype();
-  const [filter, setFilter] = useState<FilterValue>("semua");
+  const [filter, setFilter] = useState<Filter>("semua");
 
-  const sortedDeposits = [...deposits].sort(
-    (left, right) => new Date(right.submittedAt).getTime() - new Date(left.submittedAt).getTime(),
-  );
-  const filteredDeposits =
-    filter === "semua"
-      ? sortedDeposits
-      : sortedDeposits.filter((deposit) => deposit.status === filter);
+  const sorted = [...deposits].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  const visible = sorted.filter((deposit) => filter === "semua" || deposit.status === filter);
+  const today = visible.filter((deposit) => isToday(deposit.submittedAt));
+  const earlier = visible.filter((deposit) => !isToday(deposit.submittedAt));
 
   return (
-    <div className="flex flex-col gap-5">
-      <PrototypeNotice />
-
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h2 text-foreground">Riwayat setoran</h1>
-        <p className="text-body text-muted">
-          Semua pengajuan dan transaksi milik Anda, terbaru lebih dulu.
+    <div className="mx-auto w-full max-w-[720px] lg:max-w-[1180px]">
+      <header className="bg-white px-5 pt-[50px] pb-1">
+        <h1 className="text-[22px] leading-[28px] font-bold text-heading">Riwayat Setoran</h1>
+        <p className="text-[12px] leading-[16px] text-[#64766d]">
+          Semua pengajuan dan transaksi kamu
         </p>
-      </header>
-
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter status setoran">
-        {filters.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => setFilter(item.value)}
-            aria-pressed={filter === item.value}
-            className={cn(
-              "min-h-10 rounded-full border px-3 py-1.5 text-body-sm font-semibold transition-colors",
-              filter === item.value
-                ? "border-green-darker bg-primary-soft text-green-darker"
-                : "border-border bg-surface text-muted hover:bg-brown-light",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {filteredDeposits.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          {filteredDeposits.map((deposit) => (
-            <DepositCard key={deposit.id} deposit={deposit} />
+        <div
+          role="group"
+          aria-label="Filter status"
+          className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {filters.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={filter === item.id}
+              onClick={() => setFilter(item.id)}
+              className={cn(
+                "flex h-[42px] shrink-0 items-center justify-center rounded-full border px-5 text-[12px] text-heading focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                filter === item.id
+                  ? "border-[#00d951] bg-[#00d951] font-semibold"
+                  : "border-[#daeae0] bg-white",
+              )}
+            >
+              {item.label}
+            </button>
           ))}
         </div>
-      ) : (
-        <EmptyState
-          title="Belum ada transaksi"
-          description={
-            filter === "semua"
-              ? "Setoran yang Anda ajukan akan muncul di sini."
-              : `Tidak ada transaksi berstatus ${filter}. Coba pilih filter lain.`
-          }
-        />
-      )}
+      </header>
 
-      <p className="text-caption text-muted">
-        Data simulasi. Pengajuan baru pada prototype tersimpan di perangkat ini.
-      </p>
+      <div className="px-5 pt-[18px]">
+        {visible.length === 0 ? (
+          <EmptyState
+            title="Belum ada setoran"
+            description="Setoran dengan status ini belum ada."
+          />
+        ) : (
+          <ul className="gap-5 md:columns-2 lg:columns-3">
+            {today.length > 0 ? (
+              <li className="pb-[10px] break-after-avoid">
+                <GroupLabel>HARI INI · 25 OKT 2026</GroupLabel>
+              </li>
+            ) : null}
+            {today.map((deposit) => (
+              <li key={deposit.id} className="mb-[10px] break-inside-avoid">
+                <DepositEntry deposit={deposit} />
+              </li>
+            ))}
+            {earlier.length > 0 ? (
+              <li className="pt-2 pb-[10px] break-after-avoid">
+                <GroupLabel>SEBELUMNYA</GroupLabel>
+              </li>
+            ) : null}
+            {earlier.map((deposit) => (
+              <li key={deposit.id} className="mb-[10px] break-inside-avoid">
+                <DepositEntry deposit={deposit} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="pt-2 pb-4 text-center text-[12px] font-bold text-black/50">
+          Data contoh (simulasi)
+        </p>
+      </div>
     </div>
   );
 }
