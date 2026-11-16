@@ -1,14 +1,13 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { EmptyState } from "@/components/ui";
-import { formatRupiah, formatWeight } from "@/features/nasabah/format";
-import { statusMeta, GroupLabel } from "@/features/nasabah/deposit-ui";
-import { Asset } from "@/components/ui";
-import Link from "next/link";
-import { OFFICER_UNIT } from "@/features/petugas/mock-data";
-import { usePetugasDeposits } from "@/features/petugas/store";
+import { GroupLabel } from "@/features/nasabah/deposit-ui";
 import type { Deposit } from "@/features/nasabah/types";
+import { OFFICER_UNIT } from "@/features/petugas/mock-data";
+import { QueueEntry } from "@/features/petugas/queue-entry";
+import { usePetugasDeposits } from "@/features/petugas/store";
 import { cn } from "@/lib/cn";
 
 type Tab = "menunggu" | "diproses" | "selesai";
@@ -24,61 +23,11 @@ const inTab = (deposit: Deposit, tab: Tab) =>
     ? deposit.status === "selesai" || deposit.status === "dibatalkan"
     : deposit.status === tab;
 
-function QueueEntry({ deposit }: { deposit: Deposit }) {
-  const meta = statusMeta[deposit.status];
-  const weighed = deposit.status === "selesai";
-  const kg = weighed
-    ? deposit.items.reduce((sum, item) => sum + (item.actualWeight ?? 0), 0)
-    : deposit.items.reduce((sum, item) => sum + item.estimatedWeight, 0);
-  const detail = [
-    deposit.code,
-    deposit.method === "pickup" ? "Pickup" : null,
-    `${weighed ? "" : "est. "}${formatWeight(kg)}`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  return (
-    <Link
-      href={`/petugas/pengajuan/${deposit.id}`}
-      className="flex min-h-[82px] items-center gap-3 rounded-[16px] border border-line bg-white px-[15px] py-[10px] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-    >
-      <Asset src={meta.symbol} width={44} height={44} className="shrink-0" />
-      <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-        <span className="text-[14px] leading-[18px] font-semibold text-heading">
-          {deposit.customerName}
-        </span>
-        <span className="text-[12px] leading-[17px] text-subtle">{detail}</span>
-      </span>
-      <span className="flex shrink-0 flex-col items-end gap-[3px]">
-        {deposit.status === "selesai" ? (
-          <span className="text-[14px] leading-[15px] font-bold text-green-dark-hover">
-            {formatRupiah(deposit.finalTotal ?? 0)}
-          </span>
-        ) : deposit.status === "dibatalkan" ? (
-          <span className="text-[14px] leading-[15px] font-bold text-danger-dark">—</span>
-        ) : (
-          <span className="text-right text-[12px] leading-[15px] font-bold text-subtle">
-            Estimasi
-            <br />
-            {formatRupiah(deposit.estimatedTotal)}
-          </span>
-        )}
-        <span
-          className={cn(
-            "flex h-[19px] items-center rounded-full px-[9px] text-[12px] leading-[17px] font-semibold",
-            meta.badge,
-          )}
-        >
-          {meta.label}
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 export default function AntreanPage() {
-  const [tab, setTab] = useState<Tab>("menunggu");
+  const requested = useSearchParams().get("tab");
+  const [tab, setTab] = useState<Tab>(
+    tabs.some((item) => item.id === requested) ? (requested as Tab) : "menunggu",
+  );
   const deposits = usePetugasDeposits();
   const list = deposits
     .filter((deposit) => inTab(deposit, tab))
@@ -127,7 +76,14 @@ export default function AntreanPage() {
             <ul className="mt-[10px] grid gap-[10px] md:grid-cols-2 lg:grid-cols-3">
               {list.map((deposit) => (
                 <li key={deposit.id}>
-                  <QueueEntry deposit={deposit} />
+                  <QueueEntry
+                    deposit={deposit}
+                    href={
+                      deposit.status === "selesai" || deposit.status === "dibatalkan"
+                        ? `/petugas/transaksi/${deposit.id}`
+                        : `/petugas/pengajuan/${deposit.id}`
+                    }
+                  />
                 </li>
               ))}
             </ul>

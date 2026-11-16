@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { APP_NAV_CONTENT_CLASS, AppNav, Asset, type AppNavItem } from "@/components/ui";
 
 const navItems: AppNavItem[] = [
@@ -39,7 +39,8 @@ const navItems: AppNavItem[] = [
 export function PetugasShell({ children }: { children: ReactNode }) {
   return (
     <div className={`min-h-dvh bg-canvas font-inter ${APP_NAV_CONTENT_CLASS}`}>
-      {children}
+      {/* Suspense: halaman Antrean membaca ?tab= dari URL. */}
+      <Suspense>{children}</Suspense>
       <AppNav items={navItems} />
     </div>
   );

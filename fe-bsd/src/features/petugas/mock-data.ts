@@ -5,9 +5,10 @@ import type { Deposit } from "@/features/nasabah/types";
 export const OFFICER_NAME = "Andi Pratama";
 export const OFFICER_UNIT = "Unit Sukamaju";
 export const PETUGAS_TODAY = "2026-11-16";
+export const PETUGAS_YESTERDAY = "2026-11-15";
 
 const UNIT = "unit-sukamaju";
-const at = (time: string) => `${PETUGAS_TODAY}T${time}:00+07:00`;
+const at = (time: string, day = PETUGAS_TODAY) => `${day}T${time}:00+07:00`;
 
 function waiting(
   code: string,
@@ -31,11 +32,18 @@ function processing(code: string, name: string, time: string, rows: [string, num
   });
 }
 
-function done(code: string, name: string, time: string, category: string, kg: number): Deposit {
-  return seedDeposit(code, UNIT, "selesai", at(time), [[category, kg, kg]], {
+function done(
+  code: string,
+  name: string,
+  time: string,
+  category: string,
+  kg: number,
+  day = PETUGAS_TODAY,
+): Deposit {
+  return seedDeposit(code, UNIT, "selesai", at(time, day), [[category, kg, kg]], {
     customerName: name,
     officerName: OFFICER_NAME,
-    completedAt: at(time),
+    completedAt: at(time, day),
   });
 }
 
@@ -69,4 +77,8 @@ export const petugasDeposits: Deposit[] = [
     cancelledAt: at("08:45"),
     cancelledBy: `Petugas Unit (${OFFICER_NAME})`,
   }),
+  // Kemarin
+  done("SET-0179", "Dewi Lestari", "15:30", "kertas", 4.0, PETUGAS_YESTERDAY),
+  done("SET-0178", "Andi Wijaya", "14:10", "botol-kaca", 6.0, PETUGAS_YESTERDAY),
+  done("SET-0177", "Maya Putri", "10:20", "plastik", 5.5, PETUGAS_YESTERDAY),
 ];

@@ -7,7 +7,7 @@ import { OFFICER_NAME, petugasDeposits } from "./mock-data";
 
 // shortcut: data antrean petugas disimpan di localStorage perangkat dan terpisah dari data nasabah;
 // ganti dengan lib/api (BSD-55/56/57) saat endpoint tersedia.
-const KEY = "bsd.petugas.v1";
+const KEY = "bsd.petugas.v2";
 const listeners = new Set<() => void>();
 let cache: Deposit[] | null = null;
 

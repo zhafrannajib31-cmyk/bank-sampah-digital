@@ -60,7 +60,7 @@ export default function TransaksiBerhasilPage() {
 
       <div className="mt-auto flex flex-col gap-[10px] px-5 pt-16 pb-[23px]">
         <Link
-          href={`/petugas/pengajuan/${deposit.id}`}
+          href={`/petugas/transaksi/${deposit.id}`}
           className="flex h-[52px] items-center justify-center rounded-[28px] bg-primary font-sans text-[16px] font-semibold text-foreground shadow-[0_7px_18px_rgba(0,182,71,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           Lihat Detail
