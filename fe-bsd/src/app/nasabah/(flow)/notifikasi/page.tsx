@@ -70,7 +70,7 @@ export default function NotifikasiPage() {
           })}
         </ul>
       )}
-      <p className="pb-4 text-center text-[12px] font-bold text-black/50">Data contoh (simulasi)</p>
+      <p className="pb-4 text-center text-[12px] font-bold text-black/60">Data contoh (simulasi)</p>
     </StepScreen>
   );
 }

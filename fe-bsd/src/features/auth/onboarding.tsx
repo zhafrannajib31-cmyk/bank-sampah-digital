@@ -211,7 +211,7 @@ function SlideOne() {
       <Dots active={0} />
       <Copy
         title="Kelola Sampah"
-        accent={<span className="text-primary">Lebih Mudah</span>}
+        accent={<span className="text-green-dark-hover">Lebih Mudah</span>}
         body="Pilah dan setorkan sampah anorganikmu secara digital langsung dari aplikasi. Pantau jenis, berat, dan riwayat setoran tanpa repot."
       />
       <ul className="mx-auto mt-[17px] flex gap-[10px]">
@@ -329,7 +329,7 @@ function SlideThree() {
       <Copy
         title="Sampahmu Jadi Lebih"
         tight
-        accent={<span className="text-primary">Bernilai</span>}
+        accent={<span className="text-green-dark-hover">Bernilai</span>}
         body="Setoranmu tercatat sebagai saldo setoran. Saldo adalah catatan nilai setoran, bukan dana yang bisa ditarik atau dicairkan."
       />
       <ul className="mx-auto mt-[17px] flex gap-[10px]">

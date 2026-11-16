@@ -104,7 +104,7 @@ export default function PilihJenisPage() {
                         <span className={isSelected ? "text-green-dark-hover" : undefined}>
                           {formatRupiah(category.pricePerKg)}
                         </span>
-                        <span className="font-normal text-black/50">/kg</span>
+                        <span className="font-normal text-black/60">/kg</span>
                       </span>
                     )}
                     <span className="text-[12px] leading-[17px] text-black/80">

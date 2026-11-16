@@ -122,7 +122,7 @@ export default function SaldoPage() {
             </section>
           ))
         )}
-        <p className="pb-4 text-center text-[12px] font-bold text-black/50">
+        <p className="pb-4 text-center text-[12px] font-bold text-black/60">
           Data contoh (simulasi)
         </p>
       </div>

@@ -79,7 +79,7 @@ export default function BeratPage() {
   return (
     <StepScreen>
       {header}
-      <p className="text-[12px] leading-[17px] font-medium text-black/50">
+      <p className="text-[12px] leading-[17px] font-medium text-black/60">
         Masukkan perkiraan berat sampah yang akan kamu setorkan.
       </p>
 

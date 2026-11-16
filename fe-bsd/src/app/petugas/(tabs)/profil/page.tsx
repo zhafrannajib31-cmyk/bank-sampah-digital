@@ -76,12 +76,7 @@ export default function ProfilPetugasPage() {
         <section aria-label="Data diri" className="rounded-[18px] border border-[#e3ece6] bg-white">
           <div className="flex h-[38px] items-center justify-between px-4 pt-2">
             <h2 className="text-[14px] font-bold text-heading">Data Diri</h2>
-            <span
-              className="text-[12px] font-semibold text-green-dark-active underline opacity-60"
-              title="Ubah data belum tersedia"
-            >
-              Ubah
-            </span>
+            {/* Data petugas dikelola admin (aturan 6); tidak ada tindakan "Ubah" di sini. */}
           </div>
           {[
             ["Email", "andi@bsd.id"],
@@ -95,7 +90,7 @@ export default function ProfilPetugasPage() {
                 index < rows.length - 1 && "border-b border-[#eff3f0]",
               )}
             >
-              <span className="text-[#6c7d74]">{label}</span>
+              <span className="text-[#5f6e66]">{label}</span>
               <span className="font-semibold text-heading">{value}</span>
             </div>
           ))}
@@ -155,7 +150,7 @@ export default function ProfilPetugasPage() {
         </section>
 
         <LogoutButton variant="profile" />
-        <p className="pb-2 text-center text-[12px] font-bold text-black/50">
+        <p className="pb-2 text-center text-[12px] font-bold text-black/60">
           Data contoh (simulasi)
         </p>
       </div>

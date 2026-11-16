@@ -86,7 +86,7 @@ export default function RiwayatPage() {
             ))}
           </ul>
         )}
-        <p className="pt-2 pb-4 text-center text-[12px] font-bold text-black/50">
+        <p className="pt-2 pb-4 text-center text-[12px] font-bold text-black/60">
           Data contoh (simulasi)
         </p>
       </div>

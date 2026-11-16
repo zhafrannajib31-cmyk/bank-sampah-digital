@@ -92,7 +92,7 @@ export default function ProfilPage() {
                 index < rows.length - 1 && "border-b border-[#eff3f0]",
               )}
             >
-              <span className="text-[#6c7d74]">{label}</span>
+              <span className="text-[#5f6e66]">{label}</span>
               <span className="font-semibold text-heading">{value}</span>
             </div>
           ))}
@@ -152,7 +152,7 @@ export default function ProfilPage() {
         </section>
 
         <LogoutButton variant="profile" />
-        <p className="pb-2 text-center text-[12px] font-bold text-black/50">
+        <p className="pb-2 text-center text-[12px] font-bold text-black/60">
           Data contoh (simulasi)
         </p>
       </div>

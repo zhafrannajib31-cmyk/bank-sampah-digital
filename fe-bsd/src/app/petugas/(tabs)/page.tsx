@@ -135,14 +135,14 @@ export default function PetugasBerandaPage() {
                   <span className="text-[14px] leading-[20px] text-green-dark-active">
                     {formatRupiah(deposit.estimatedTotal)}
                   </span>
-                  <span className="text-[12px] leading-[17px] text-black/50">
+                  <span className="text-[12px] leading-[17px] text-black/60">
                     Est. {deposit.status === "menunggu" ? "Menunggu" : "Diproses"}
                   </span>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="text-center font-jakarta text-[12px] leading-[17px] font-bold text-black/50">
+          <p className="text-center font-jakarta text-[12px] leading-[17px] font-bold text-black/60">
             Data contoh (simulasi)
           </p>
         </section>

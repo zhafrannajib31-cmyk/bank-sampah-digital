@@ -72,12 +72,12 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
           className="rounded-[22px] bg-white px-[18px] py-3 shadow-[0_14px_30px_rgba(24,58,36,0.06)]"
         >
           <div className="flex h-7 items-center justify-between text-[14px]">
-            <span className="text-[#718079]">Saldo setoran sebelumnya</span>
+            <span className="text-[#5f6e66]">Saldo setoran sebelumnya</span>
             <span className="font-bold text-heading">{formatRupiah(before)}</span>
           </div>
           <hr className="my-[5px] border-t-[0.6px] border-[#dcece3]" />
           <div className="flex h-7 items-center justify-between text-[14px]">
-            <span className="text-[#718079]">Setoran ini</span>
+            <span className="text-[#5f6e66]">Setoran ini</span>
             <span className="font-bold text-[#008634]">+{formatRupiah(value)}</span>
           </div>
           <hr className="my-[5px] border-t-[0.6px] border-[#dcece3]" />
@@ -85,7 +85,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
             <span className="text-[14px] text-heading">Saldo setoran sekarang</span>
             <span className="text-[22px] text-[#005f29]">{formatRupiah(now)}</span>
           </div>
-          <p className="mt-2 text-[12px] leading-[17px] text-[#718079]">
+          <p className="mt-2 text-[12px] leading-[17px] text-[#5f6e66]">
             Saldo adalah catatan nilai setoran dan belum dapat dicairkan ke rekening atau e-wallet.
           </p>
         </section>
@@ -99,7 +99,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
             <p className="text-[14px] leading-[18px] font-bold text-heading">
               {formatWeight(depositActualWeight(deposit))} sampah terpilah
             </p>
-            <p className="text-[12px] leading-[17px] text-[#718079]">
+            <p className="text-[12px] leading-[17px] text-[#5f6e66]">
               {deposit.items
                 .map((item) => `${item.categoryName} ${formatWeight(item.actualWeight ?? 0)}`)
                 .join(" · ")}
@@ -113,7 +113,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
           className="rounded-[18px] border border-[#e5ede8] bg-white px-4 py-3"
         >
           <h2 className="text-[14px] font-bold text-heading">Rincian Transaksi</h2>
-          <p className="text-[12px] text-[#718079]">
+          <p className="text-[12px] text-[#5f6e66]">
             {deposit.code} · {deposit.unitName}
           </p>
           <ul className="mt-2">
@@ -126,7 +126,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
                   <span className="block text-[13px] font-semibold text-heading">
                     {item.categoryName}
                   </span>
-                  <span className="text-[#718079]">
+                  <span className="text-[#5f6e66]">
                     {formatWeight(item.actualWeight ?? 0)} ×{" "}
                     {formatRupiah(item.unitPriceSnapshot ?? 0)}/kg
                   </span>
@@ -141,7 +141,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
             <span>Total nilai</span>
             <span>{formatRupiah(deposit.finalTotal ?? 0)}</span>
           </p>
-          <p className="mt-1 text-[12px] leading-[17px] text-[#718079]">
+          <p className="mt-1 text-[12px] leading-[17px] text-[#5f6e66]">
             Dikonfirmasi {formatDateMedium(deposit.completedAt ?? deposit.submittedAt)},{" "}
             {formatClock(deposit.completedAt ?? deposit.submittedAt)} · nilai = berat aktual × harga
             saat konfirmasi.
@@ -169,7 +169,7 @@ export function SetoranSelesai({ deposit, deposits }: { deposit: Deposit; deposi
               </button>
             ))}
           </div>
-          <p className="text-[12px] leading-[17px] text-[#718079]">
+          <p className="text-[12px] leading-[17px] text-[#5f6e66]">
             {deposit.officerName ?? "Petugas unit"} · {deposit.unitName}
           </p>
         </section>

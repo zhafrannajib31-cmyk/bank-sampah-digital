@@ -105,7 +105,7 @@ export default function AntreanPage() {
             </ul>
           </>
         )}
-        <p className="pt-3 pb-4 text-center text-[12px] font-bold text-black/50">
+        <p className="pt-3 pb-4 text-center text-[12px] font-bold text-black/60">
           Data contoh (simulasi)
         </p>
       </div>

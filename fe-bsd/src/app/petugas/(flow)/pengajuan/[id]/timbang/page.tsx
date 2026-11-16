@@ -77,7 +77,7 @@ export default function TimbangSampahPage() {
         subtitle={`${deposit.code} · ${deposit.customerName}`}
         backHref={`/petugas/pengajuan/${id}/periksa`}
       />
-      <p className="text-[12px] leading-[17px] font-medium text-black/50">
+      <p className="text-[12px] leading-[17px] font-medium text-black/60">
         Masukkan berat aktual hasil timbangan. Nilai dihitung server.
       </p>
 
