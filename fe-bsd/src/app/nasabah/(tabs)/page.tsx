@@ -10,6 +10,7 @@ import {
   formatRupiah,
   formatWeight,
 } from "@/features/nasabah/format";
+import { NotificationBell } from "@/features/nasabah/notification-bell";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 
 // Faktor dampak (simulasi) agar kartu "Dampak Lingkunganmu" terhitung dari data setoran.
@@ -48,7 +49,7 @@ export default function BerandaPage() {
             <p className="font-sans text-[18px] font-medium tracking-[-0.275px] text-white">
               Dashboard
             </p>
-            <Asset src="/nasabah/home-bell-avatar.svg" width={63.6667} height={32} />
+            <NotificationBell />
           </div>
           <h1 className="mt-1 font-sans text-[22px] leading-[26px] font-semibold text-white">
             Halo, {firstName}
