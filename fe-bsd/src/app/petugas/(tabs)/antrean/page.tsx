@@ -5,7 +5,9 @@ import { EmptyState } from "@/components/ui";
 import { formatRupiah, formatWeight } from "@/features/nasabah/format";
 import { statusMeta, GroupLabel } from "@/features/nasabah/deposit-ui";
 import { Asset } from "@/components/ui";
-import { OFFICER_UNIT, petugasDeposits } from "@/features/petugas/mock-data";
+import Link from "next/link";
+import { OFFICER_UNIT } from "@/features/petugas/mock-data";
+import { usePetugasDeposits } from "@/features/petugas/store";
 import type { Deposit } from "@/features/nasabah/types";
 import { cn } from "@/lib/cn";
 
@@ -37,7 +39,10 @@ function QueueEntry({ deposit }: { deposit: Deposit }) {
     .join(" · ");
 
   return (
-    <div className="flex min-h-[82px] items-center gap-3 rounded-[16px] border border-line bg-white px-[15px] py-[10px]">
+    <Link
+      href={`/petugas/pengajuan/${deposit.id}`}
+      className="flex min-h-[82px] items-center gap-3 rounded-[16px] border border-line bg-white px-[15px] py-[10px] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+    >
       <Asset src={meta.symbol} width={44} height={44} className="shrink-0" />
       <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
         <span className="text-[14px] leading-[18px] font-semibold text-heading">
@@ -68,13 +73,14 @@ function QueueEntry({ deposit }: { deposit: Deposit }) {
           {meta.label}
         </span>
       </span>
-    </div>
+    </Link>
   );
 }
 
 export default function AntreanPage() {
   const [tab, setTab] = useState<Tab>("menunggu");
-  const list = petugasDeposits
+  const deposits = usePetugasDeposits();
+  const list = deposits
     .filter((deposit) => inTab(deposit, tab))
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 

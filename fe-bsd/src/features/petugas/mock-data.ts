@@ -15,8 +15,9 @@ function waiting(
   time: string,
   rows: [string, number][],
   method?: "pickup",
+  customerNote?: string,
 ): Deposit {
-  return seedDeposit(code, UNIT, "menunggu", at(time), rows, { customerName: name, method });
+  return seedDeposit(code, UNIT, "menunggu", at(time), rows, { customerName: name, method, customerNote });
 }
 
 function processing(code: string, name: string, time: string, rows: [string, number][]): Deposit {
@@ -36,10 +37,17 @@ function done(code: string, name: string, time: string, category: string, kg: nu
 
 export const petugasDeposits: Deposit[] = [
   waiting("SET-0194", "Rahmat Hidayat", "11:20", [["kardus", 2.0]]),
-  waiting("SET-0192", "Budi Santoso", "10:45", [
-    ["plastik", 5.0],
-    ["kardus", 3.0],
-  ]),
+  waiting(
+    "SET-0192",
+    "Budi Santoso",
+    "10:45",
+    [
+      ["plastik", 5.0],
+      ["kardus", 3.0],
+    ],
+    undefined,
+    "Sampah sudah dipilah dan bersih.",
+  ),
   waiting("SET-0195", "Dewi Lestari", "10:10", [["kertas", 6.0]]),
   waiting("SET-0196", "Hendra Kusuma", "09:40", [["kertas", 3.0]], "pickup"),
   processing("SET-0193", "Siti Aminah", "11:00", [["kertas", 4.5]]),

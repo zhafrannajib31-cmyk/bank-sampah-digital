@@ -65,6 +65,8 @@ export interface Deposit {
   completedAt?: string;
   /** Hanya dipakai sisi petugas: nama nasabah pengaju. */
   customerName?: string;
+  /** Catatan dari nasabah untuk petugas. */
+  customerNote?: string;
   /** Metode setor; default antar sendiri. */
   method?: "antar" | "pickup";
   officerName?: string;

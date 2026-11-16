@@ -4,19 +4,20 @@ import Link from "next/link";
 import { Asset } from "@/components/ui";
 import { CategoryTile } from "@/features/nasabah/category-tile";
 import { formatRupiah, formatWeight } from "@/features/nasabah/format";
-import { OFFICER_NAME, OFFICER_UNIT, petugasDeposits } from "@/features/petugas/mock-data";
-
-const count = (status: string) => petugasDeposits.filter((d) => d.status === status).length;
+import { OFFICER_NAME, OFFICER_UNIT } from "@/features/petugas/mock-data";
+import { usePetugasDeposits } from "@/features/petugas/store";
 
 export default function PetugasBerandaPage() {
+  const deposits = usePetugasDeposits();
+  const count = (status: string) => deposits.filter((d) => d.status === status).length;
   const waiting = count("menunggu");
   const processing = count("diproses");
-  const done = petugasDeposits.filter((d) => d.status === "selesai");
+  const done = deposits.filter((d) => d.status === "selesai");
   const weighed = done.reduce(
     (sum, d) => sum + d.items.reduce((acc, item) => acc + (item.actualWeight ?? 0), 0),
     0,
   );
-  const latest = petugasDeposits
+  const latest = deposits
     .filter((d) => d.status === "menunggu" || d.status === "diproses")
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
     .slice(0, 3);
