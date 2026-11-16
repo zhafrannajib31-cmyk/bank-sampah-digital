@@ -52,6 +52,21 @@ export const registerSchema = z
     message: "Konfirmasi kata sandi tidak sama.",
   });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Kata sandi saat ini wajib diisi."),
+    newPassword: z.string().min(8, "Kata sandi baru minimal 8 karakter."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Konfirmasi kata sandi tidak sama.",
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    path: ["newPassword"],
+    message: "Kata sandi baru harus berbeda dari yang lama.",
+  });
+
 export type FieldErrors = Record<string, string>;
 
 /** Ambil pesan pertama per kolom dari hasil zod. */

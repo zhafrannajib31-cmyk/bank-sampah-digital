@@ -115,11 +115,16 @@ export default function ProfilPetugasPage() {
               <Asset src="/nasabah/profil-chevron.svg" width={16} height={16} />
             </Row>
           </Link>
-          <Row>
-            <IconBox bg="bg-[#e0f0ff]" src="/nasabah/profil-lock.svg" />
-            <span className="flex-1 text-[13px] font-semibold text-heading">Ubah Kata Sandi</span>
-            <Asset src="/nasabah/profil-chevron.svg" width={16} height={16} />
-          </Row>
+          <Link
+            href="/petugas/profil/kata-sandi"
+            className="focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Row>
+              <IconBox bg="bg-[#e0f0ff]" src="/nasabah/profil-lock.svg" />
+              <span className="flex-1 text-[13px] font-semibold text-heading">Ubah Kata Sandi</span>
+              <Asset src="/nasabah/profil-chevron.svg" width={16} height={16} />
+            </Row>
+          </Link>
           <Row>
             <IconBox bg="bg-wait-bg" src="/nasabah/profil-bell.svg" />
             <span className="flex-1 text-[13px] font-semibold text-heading">Notifikasi Status</span>
@@ -140,13 +145,18 @@ export default function ProfilPetugasPage() {
               )}
             </button>
           </Row>
-          <Row bordered={false}>
-            <IconBox bg="bg-[#f0e9fc]" src="/nasabah/profil-help.svg" />
-            <span className="flex-1 text-[13px] font-semibold text-heading">
-              Bantuan &amp; Cara Memilah
-            </span>
-            <Asset src="/nasabah/profil-chevron.svg" width={16} height={16} />
-          </Row>
+          <Link
+            href="/petugas/bantuan"
+            className="focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Row bordered={false}>
+              <IconBox bg="bg-[#f0e9fc]" src="/nasabah/profil-help.svg" />
+              <span className="flex-1 text-[13px] font-semibold text-heading">
+                Bantuan &amp; Cara Memilah
+              </span>
+              <Asset src="/nasabah/profil-chevron.svg" width={16} height={16} />
+            </Row>
+          </Link>
         </section>
 
         <LogoutButton variant="profile" />

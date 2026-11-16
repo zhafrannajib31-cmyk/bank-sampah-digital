@@ -19,6 +19,10 @@ export function forgotPassword(body: { email: string }) {
   return request<{ sent: boolean }>("/auth/forgot-password", { method: "POST", body });
 }
 
+export function changePassword(body: { currentPassword: string; newPassword: string }) {
+  return request<{ changed: boolean }>("/auth/change-password", { method: "POST", body });
+}
+
 export function logout() {
   return request<null>("/auth/logout", { method: "POST" });
 }

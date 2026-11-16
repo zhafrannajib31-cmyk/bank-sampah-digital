@@ -14,6 +14,13 @@ export const MOCK_ACCOUNTS = [
 
 // shortcut: akun hasil registrasi simulasi hanya hidup di memori tab, hilang saat reload.
 const registered = new Set<string>();
+// shortcut: kata sandi baru hasil ganti simulasi juga hanya hidup di memori tab.
+const changedPasswords = new Map<string, string>();
+const passwordOf = (account: { email: string; password: string }) =>
+  changedPasswords.get(account.email) ?? account.password;
+
+const sessionRole = () =>
+  document.cookie.match(new RegExp(`(?:^|; )${SESSION_COOKIE}=([^;]+)`))?.[1];
 
 function startSession(role: Role) {
   document.cookie = `${SESSION_COOKIE}=${role}; path=/; max-age=28800; samesite=lax`;
@@ -27,7 +34,7 @@ registerMockRoutes({
     await delay();
     const { email, password } = body as { email: string; password: string };
     const account = MOCK_ACCOUNTS.find(
-      (item) => item.email === email.trim().toLowerCase() && item.password === password,
+      (item) => item.email === email.trim().toLowerCase() && passwordOf(item) === password,
     );
     if (!account) {
       throw new ApiError(401, "INVALID_CREDENTIALS", "Email atau kata sandi salah.");
@@ -56,6 +63,21 @@ registerMockRoutes({
     await delay();
     // Respons sama untuk email terdaftar maupun tidak, agar akun tidak bisa ditebak.
     return { sent: true };
+  },
+
+  "POST /auth/change-password": async ({ body }) => {
+    await delay();
+    const { currentPassword, newPassword } = body as {
+      currentPassword: string;
+      newPassword: string;
+    };
+    const account = MOCK_ACCOUNTS.find((item) => item.role === sessionRole() && item.active);
+    if (!account) throw new ApiError(401, "UNAUTHENTICATED", "Sesi berakhir. Silakan masuk lagi.");
+    if (passwordOf(account) !== currentPassword) {
+      throw new ApiError(400, "WRONG_PASSWORD", "Kata sandi saat ini salah.");
+    }
+    changedPasswords.set(account.email, newPassword);
+    return { changed: true };
   },
 
   "POST /auth/logout": async () => {
