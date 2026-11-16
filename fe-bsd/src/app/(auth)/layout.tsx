@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 
+// Latar gradien berbeda per layar (auth: hijau-putih, splash: biru-hijau, onboarding: putih),
+// jadi tiap layar menggambar latarnya sendiri.
 export default function AuthLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-dvh flex-1 flex-col bg-gradient-to-b from-green-light via-surface to-blue-light">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

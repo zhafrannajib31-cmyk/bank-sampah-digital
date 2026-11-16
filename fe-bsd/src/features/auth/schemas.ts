@@ -8,6 +8,7 @@ export function normalizeWhatsapp(value: string): string {
   if (digits.startsWith("+62")) return digits;
   if (digits.startsWith("62")) return `+${digits}`;
   if (digits.startsWith("0")) return `+62${digits.slice(1)}`;
+  if (digits.startsWith("8")) return `+62${digits}`;
   return digits;
 }
 
@@ -51,14 +52,20 @@ export function fieldErrors(error: z.ZodError): FieldErrors {
   return errors;
 }
 
-export type PasswordStrength = { level: 0 | 1 | 2 | 3; label: string };
+export type PasswordStrength = { level: 0 | 1 | 2 | 3 | 4; label: string };
 
+/** 4 kriteria: panjang >= 8, huruf besar+kecil, angka, simbol. Hanya petunjuk UX; server tetap penentu. */
 export function passwordStrength(password: string): PasswordStrength {
   if (!password) return { level: 0, label: "" };
-  let score = 0;
-  if (password.length >= 8) score++;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score++;
-  if (password.length < 8) return { level: 1, label: "Lemah" };
-  return score >= 3 ? { level: 3, label: "Kuat" } : { level: 2, label: "Sedang" };
+  const score = [
+    password.length >= 8,
+    /[a-z]/.test(password) && /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length as 1 | 2 | 3 | 4;
+  const level = password.length < 8 ? 1 : Math.max(score, 1);
+  return {
+    level: level as 1 | 2 | 3 | 4,
+    label: level <= 1 ? "Lemah" : level === 2 ? "Sedang" : "Kuat",
+  };
 }

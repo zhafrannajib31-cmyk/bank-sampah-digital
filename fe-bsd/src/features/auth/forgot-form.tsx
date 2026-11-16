@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { Button, Input } from "@/components/ui";
 import { userMessage } from "@/lib/api";
 import { forgotPassword } from "./api";
-import { FormAlert } from "./auth-card";
+import { AuthField, AuthHeading, FormMessage, primaryPillClass } from "./auth-ui";
 import { fieldErrors, forgotPasswordSchema, type FieldErrors } from "./schemas";
+
+const bottomLink =
+  "inline-flex min-h-11 items-center font-inter text-[12px] font-medium text-black/70 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
 
 export function ForgotForm() {
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -41,41 +44,66 @@ export function ForgotForm() {
 
   if (sentTo) {
     return (
-      <div role="status" className="flex flex-col gap-4">
-        <p className="text-body text-foreground">
-          Jika <strong className="break-all">{sentTo}</strong> terdaftar, tautan untuk mengatur
-          ulang kata sandi sudah dikirim. Tautan berlaku 30 menit.
+      <>
+        <AuthHeading
+          title="Cek Email Kamu"
+          subtitle="Tautan pengaturan ulang sudah dikirim. Berlaku 30 menit; cek juga folder spam."
+        />
+        <p className="sr-only" role="status">
+          Tautan dikirim ke {sentTo}
         </p>
-        {formError ? <FormAlert>{formError}</FormAlert> : null}
-        <Button
-          variant="outline"
-          size="lg"
-          isLoading={isLoading}
-          loadingText="Mengirim ulang…"
-          onClick={() => send(sentTo)}
-        >
-          Kirim ulang
-        </Button>
-      </div>
+        <div className="mt-[38px] flex w-full max-w-[300px] flex-col items-center gap-[10px]">
+          <Link href="/login" className={primaryPillClass}>
+            Kembali ke Login
+          </Link>
+          {formError ? <FormMessage>{formError}</FormMessage> : null}
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => send(sentTo)}
+            className={bottomLink}
+          >
+            {isLoading ? "Mengirim ulang…" : "Tidak menerima email? Kirim ulang"}
+          </button>
+        </div>
+      </>
     );
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {formError ? <FormAlert>{formError}</FormAlert> : null}
-      <Input
-        name="email"
-        type="email"
-        label="Email"
-        autoComplete="email"
-        inputMode="email"
-        placeholder="nama@email.com"
-        error={errors.email}
-        required
+    <>
+      <AuthHeading
+        title="Lupa Kata Sandi"
+        subtitle="Masukkan email akunmu. Kami kirim tautan untuk mengatur ulang kata sandi."
       />
-      <Button type="submit" size="lg" isLoading={isLoading} loadingText="Mengirim…">
-        Kirim tautan
-      </Button>
-    </form>
+      <form
+        noValidate
+        onSubmit={handleSubmit}
+        className="mt-[38px] flex w-full max-w-[326px] flex-col"
+      >
+        <AuthField
+          name="email"
+          type="email"
+          label="Email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="Masukkan Alamat Email Anda"
+          error={errors.email}
+        />
+        {formError ? (
+          <div className="mt-2">
+            <FormMessage>{formError}</FormMessage>
+          </div>
+        ) : null}
+        <div className="mx-auto mt-[27px] flex w-full max-w-[300px] flex-col items-center gap-[10px]">
+          <button type="submit" disabled={isLoading} className={primaryPillClass}>
+            {isLoading ? "Mengirim…" : "Kirim Tautan"}
+          </button>
+          <Link href="/login" className={bottomLink}>
+            Ingat kata sandi? Masuk
+          </Link>
+        </div>
+      </form>
+    </>
   );
 }

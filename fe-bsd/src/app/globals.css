@@ -8,6 +8,8 @@
 @theme {
   /* Font */
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-inter: var(--font-inter-face), ui-sans-serif, system-ui, sans-serif;
+  --font-jakarta: var(--font-jakarta-face), ui-sans-serif, system-ui, sans-serif;
 
   /* Typography mobile (Poppins) */
   --text-display: 40px;
@@ -98,6 +100,37 @@
   --color-border: #cfc7ba;
   --color-surface: #ffffff;
   --color-surface-muted: #f0ede9;
+
+  /* Onboarding — warna di desain Figma di luar token dasar */
+  --color-ink: #131b2e;
+  --color-slate: #0f172a;
+  --color-lavender: #f2f3ff;
+  --color-lavender-strong: #eaedff;
+  --color-lavender-dot: #dae2fd;
+
+  /* Layar Nasabah — warna desain Figma di luar token dasar */
+  --color-canvas: #f4f8f5;
+  --color-line: #e2ece5;
+  --color-line-strong: #d7eadf;
+  --color-heading: #102219;
+  --color-subtle: #718078;
+  --color-body-muted: #53675c;
+  --color-open-bg: #dcf8e6;
+  --color-open-text: #006e29;
+  --color-closed-bg: #fff1c8;
+  --color-closed-text: #886000;
+  --color-tile-bg: #e2fbea;
+  --color-info-bg: #e4f3ff;
+  --color-info-title: #095a98;
+  --color-info-body: #285c88;
+  --color-mist: #faf8ff;
+  --color-nav-idle: #6e7b6c;
+  --color-wait-bg: #fff1ca;
+  --color-wait-text: #8a5700;
+  --color-proc-bg: #e0efff;
+  --color-proc-text: #0069be;
+  --color-teal-start: #00c65c;
+  --color-teal-end: #0a9fc8;
 
   /* Danger/error — tambahan semantik di luar token Figma (disetujui BSD-16) */
   --color-danger-soft: #fee2e2;
