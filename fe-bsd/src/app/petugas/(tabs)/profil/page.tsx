@@ -48,7 +48,7 @@ export default function ProfilPetugasPage() {
   ).length;
 
   return (
-    <div className="mx-auto w-full max-w-[720px]">
+    <div className="mx-auto w-full max-w-[430px]">
       <header className="relative h-[262px] overflow-hidden bg-linear-to-b from-[#b9f7d2] to-[#e5fbee]">
         <h1 className="absolute top-[50px] left-5 text-[23px] leading-[28px] font-bold text-heading">
           Profil
