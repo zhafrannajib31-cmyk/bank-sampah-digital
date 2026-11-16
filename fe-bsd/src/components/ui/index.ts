@@ -24,6 +24,11 @@ export {
   type DepositStatus,
   type StatusBadgeProps,
 } from "./badge";
+export { AppNav, APP_NAV_CONTENT_CLASS, type AppNavItem } from "./app-nav";
+export { StepHeader, type StepHeaderProps } from "./step-header";
+export { TabPills, type TabPillItem } from "./tab-pills";
+export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
+export { Skeleton } from "./skeleton";
 export {
   EmptyState,
   ErrorState,
