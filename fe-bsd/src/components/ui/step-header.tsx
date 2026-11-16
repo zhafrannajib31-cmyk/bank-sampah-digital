@@ -13,13 +13,18 @@ export function StepActions({ children }: { children: ReactNode }) {
 
 export interface StepHeaderProps {
   title: string;
-  /** Langkah saat ini (mulai dari 1). */
-  step: number;
-  totalSteps: number;
+  /** Langkah saat ini (mulai dari 1). Bersama `totalSteps` menampilkan "Langkah x dari N" dan bar progres. */
+  step?: number;
+  totalSteps?: number;
+  /** Teks di bawah judul bila tanpa langkah (mis. kode setoran dan nama nasabah). */
+  subtitle?: string;
   backHref: string;
 }
 
-export function StepHeader({ title, step, totalSteps, backHref }: StepHeaderProps) {
+export function StepHeader({ title, step, totalSteps, subtitle, backHref }: StepHeaderProps) {
+  const hasSteps = step !== undefined && totalSteps !== undefined;
+  const sub = hasSteps ? `Langkah ${step} dari ${totalSteps}` : subtitle;
+
   return (
     <header className="flex flex-col gap-[10px]">
       <div className="flex items-center gap-[13px]">
@@ -34,25 +39,31 @@ export function StepHeader({ title, step, totalSteps, backHref }: StepHeaderProp
           <h1 className="font-sans text-[18px] leading-[20px] font-medium tracking-[-0.275px] text-black">
             {title}
           </h1>
-          <p className="font-inter text-[12px] leading-[17px] font-medium tracking-[-0.275px] text-green-dark-active">
-            Langkah {step} dari {totalSteps}
-          </p>
+          {sub ? (
+            <p className="font-inter text-[12px] leading-[17px] font-medium tracking-[-0.275px] text-green-dark-active">
+              {sub}
+            </p>
+          ) : null}
         </div>
       </div>
-      <div
-        role="progressbar"
-        aria-label="Kemajuan langkah"
-        aria-valuemin={1}
-        aria-valuemax={totalSteps}
-        aria-valuenow={step}
-        aria-valuetext={`Langkah ${step} dari ${totalSteps}`}
-        className="h-1 w-full overflow-hidden rounded-[2px] bg-brown-light"
-      >
+      {hasSteps ? (
         <div
-          className="h-full rounded-[2px] bg-primary transition-[width]"
-          style={{ width: `${(step / totalSteps) * 100}%` }}
-        />
-      </div>
+          role="progressbar"
+          aria-label="Kemajuan langkah"
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+          aria-valuenow={step}
+          aria-valuetext={`Langkah ${step} dari ${totalSteps}`}
+          className="h-1 w-full overflow-hidden rounded-[2px] bg-brown-light"
+        >
+          <div
+            className="h-full rounded-[2px] bg-primary transition-[width]"
+            style={{ width: `${(step / totalSteps) * 100}%` }}
+          />
+        </div>
+      ) : (
+        <hr className="border-t-[0.5px] border-line" />
+      )}
     </header>
   );
 }
