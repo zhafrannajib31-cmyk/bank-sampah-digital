@@ -87,6 +87,30 @@ export function rejectDeposit(id: string, reason: string) {
   );
 }
 
+const confirmedKeys = new Set<string>();
+
+/**
+ * Konfirmasi transaksi: Diproses (sudah ditimbang) -> Selesai. Hanya sekali: kunci idempotensi yang sama
+ * atau status yang sudah Selesai tidak mengubah apa pun (aman saat retry). Nilai total diambil dari baris
+ * penimbangan, bukan dihitung ulang.
+ */
+export function confirmDeposit(id: string, idempotencyKey: string) {
+  if (confirmedKeys.has(idempotencyKey)) return;
+  confirmedKeys.add(idempotencyKey);
+  const now = new Date().toISOString();
+  update(id, (deposit) =>
+    deposit.status !== "diproses" || deposit.items.some((item) => item.finalValue === undefined)
+      ? deposit
+      : {
+          ...deposit,
+          status: "selesai",
+          finalTotal: deposit.items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0),
+          completedAt: now,
+          events: [...deposit.events, event(deposit, "confirm", "Transaksi dikonfirmasi petugas")],
+        },
+  );
+}
+
 /**
  * Simpan hasil timbang per jenis. Harga disimpan sebagai snapshot saat penimbangan (aturan 2);
  * nilai per baris dihitung di sini sebagai pengganti server (aturan 1).

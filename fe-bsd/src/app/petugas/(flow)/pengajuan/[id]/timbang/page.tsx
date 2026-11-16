@@ -65,7 +65,7 @@ export default function TimbangSampahPage() {
       deposit.id,
       Object.fromEntries(rows.map((row) => [row.item.categoryId, row.weight])),
     );
-    router.push("/petugas/antrean");
+    router.push(`/petugas/pengajuan/${deposit.id}/hasil`);
   }
 
   return (
