@@ -45,7 +45,7 @@ export default function TolakPengajuanPage() {
 
   const backHref = `/petugas/pengajuan/${id}`;
 
-  if (!deposit || deposit.status !== "menunggu") {
+  if (!deposit || (deposit.status !== "menunggu" && deposit.status !== "diproses")) {
     return (
       <StepScreen>
         <StepHeader title="Tolak Pengajuan" subtitle={deposit?.code} backHref="/petugas/antrean" />

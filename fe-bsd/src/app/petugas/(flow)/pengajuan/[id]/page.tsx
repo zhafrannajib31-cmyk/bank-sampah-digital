@@ -180,7 +180,7 @@ export default function DetailPengajuanPage() {
               title={pickup ? "Penjemputan belum didukung" : undefined}
               onClick={() => {
                 acceptDeposit(deposit.id);
-                router.push("/petugas/antrean");
+                router.push(`/petugas/pengajuan/${deposit.id}/periksa`);
               }}
               className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -189,10 +189,18 @@ export default function DetailPengajuanPage() {
           </>
         ) : (
           <Link
-            href="/petugas/antrean"
+            href={
+              deposit.status === "diproses" &&
+              deposit.items.some((item) => item.actualWeight === undefined)
+                ? `/petugas/pengajuan/${deposit.id}/periksa`
+                : "/petugas/antrean"
+            }
             className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
           >
-            Kembali ke Antrean
+            {deposit.status === "diproses" &&
+            deposit.items.some((item) => item.actualWeight === undefined)
+              ? "Lanjutkan Proses"
+              : "Kembali ke Antrean"}
           </Link>
         )}
       </div>

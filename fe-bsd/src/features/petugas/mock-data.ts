@@ -17,7 +17,11 @@ function waiting(
   method?: "pickup",
   customerNote?: string,
 ): Deposit {
-  return seedDeposit(code, UNIT, "menunggu", at(time), rows, { customerName: name, method, customerNote });
+  return seedDeposit(code, UNIT, "menunggu", at(time), rows, {
+    customerName: name,
+    method,
+    customerNote,
+  });
 }
 
 function processing(code: string, name: string, time: string, rows: [string, number][]): Deposit {
