@@ -1,0 +1,64 @@
+import { z } from "zod";
+
+const email = z.email("Masukkan email yang valid, contoh: nama@email.com.");
+
+/** Terima 08xx, 628xx, atau +628xx; spasi dan tanda hubung diabaikan. Hasil: +628xx. */
+export function normalizeWhatsapp(value: string): string {
+  const digits = value.replace(/[\s-]/g, "");
+  if (digits.startsWith("+62")) return digits;
+  if (digits.startsWith("62")) return `+${digits}`;
+  if (digits.startsWith("0")) return `+62${digits.slice(1)}`;
+  return digits;
+}
+
+export const loginSchema = z.object({
+  email,
+  password: z.string().min(1, "Kata sandi wajib diisi."),
+});
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const registerSchema = z
+  .object({
+    name: z.string().trim().min(1, "Nama lengkap wajib diisi."),
+    email,
+    whatsapp: z
+      .string()
+      .transform(normalizeWhatsapp)
+      .pipe(
+        z
+          .string()
+          .regex(/^\+628[1-9][0-9]{7,11}$/, "Nomor WhatsApp tidak valid, contoh: 0812 3456 7890."),
+      ),
+    password: z.string().min(8, "Kata sandi minimal 8 karakter."),
+    confirmPassword: z.string(),
+    acceptedTerms: z.literal(true, "Anda perlu menyetujui Syarat & Ketentuan."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Konfirmasi kata sandi tidak sama.",
+  });
+
+export type FieldErrors = Record<string, string>;
+
+/** Ambil pesan pertama per kolom dari hasil zod. */
+export function fieldErrors(error: z.ZodError): FieldErrors {
+  const errors: FieldErrors = {};
+  for (const issue of error.issues) {
+    const key = String(issue.path[0] ?? "form");
+    errors[key] ??= issue.message;
+  }
+  return errors;
+}
+
+export type PasswordStrength = { level: 0 | 1 | 2 | 3; label: string };
+
+export function passwordStrength(password: string): PasswordStrength {
+  if (!password) return { level: 0, label: "" };
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score++;
+  if (password.length < 8) return { level: 1, label: "Lemah" };
+  return score >= 3 ? { level: 3, label: "Kuat" } : { level: 2, label: "Sedang" };
+}

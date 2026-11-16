@@ -20,6 +20,12 @@ export function isRole(value: string | undefined): value is Role {
   return value === "nasabah" || value === "petugas" || value === "admin";
 }
 
+/** Tujuan setelah login: `next` hanya dipakai jika path internal yang boleh diakses peran ini. */
+export function postLoginPath(next: string | undefined, role: Role): string {
+  const internal = next?.startsWith("/") && !next.startsWith("//") && !next.includes("\\");
+  return next && internal && resolveAccess(next, role).type === "allow" ? next : roleHome[role];
+}
+
 /** Keputusan akses murni (tanpa I/O) agar mudah diuji dan dipakai ulang di proxy. */
 export function resolveAccess(pathname: string, role: Role | null): AccessDecision {
   const area = protectedPrefixes.find(

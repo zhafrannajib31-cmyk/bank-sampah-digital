@@ -1,8 +1,25 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { AuthCard, linkClass } from "@/features/auth/auth-card";
+import { RegisterForm } from "@/features/auth/register-form";
+
+export const metadata: Metadata = { title: "Daftar" };
+
 export default function RegisterPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-12">
-      <h1 className="text-2xl font-semibold">Daftar</h1>
-      <p className="text-zinc-600">Halaman daftar (placeholder).</p>
-    </main>
+    <AuthCard
+      title="Daftar Nasabah"
+      description="Buat akun untuk mulai mencatat setoran sampah Anda."
+      footer={
+        <>
+          Sudah punya akun?{" "}
+          <Link href="/login" className={linkClass}>
+            Masuk
+          </Link>
+        </>
+      }
+    >
+      <RegisterForm />
+    </AuthCard>
   );
 }

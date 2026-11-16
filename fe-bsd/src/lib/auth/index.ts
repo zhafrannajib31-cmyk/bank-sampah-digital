@@ -4,6 +4,7 @@
 export {
   SESSION_COOKIE,
   isRole,
+  postLoginPath,
   resolveAccess,
   roleHome,
   type AccessDecision,

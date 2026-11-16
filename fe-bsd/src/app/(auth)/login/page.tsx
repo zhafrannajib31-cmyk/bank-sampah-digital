@@ -1,8 +1,28 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+import { AuthCard, linkClass } from "@/features/auth/auth-card";
+import { LoginForm } from "@/features/auth/login-form";
+
+export const metadata: Metadata = { title: "Masuk" };
+
 export default function LoginPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-12">
-      <h1 className="text-2xl font-semibold">Masuk</h1>
-      <p className="text-zinc-600">Halaman masuk (placeholder).</p>
-    </main>
+    <AuthCard
+      title="Masuk"
+      description="Masuk untuk mengajukan atau memantau setoran sampah."
+      footer={
+        <>
+          Belum punya akun?{" "}
+          <Link href="/register" className={linkClass}>
+            Daftar sekarang
+          </Link>
+        </>
+      }
+    >
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </AuthCard>
   );
 }

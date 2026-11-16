@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { Badge } from "@/components/ui";
+import { LogoutButton } from "@/features/auth/logout-button";
 import { NasabahNav, NasabahNavFallback } from "./nasabah-nav";
 
 export function NasabahShell({ children }: { children: ReactNode }) {
@@ -19,7 +20,10 @@ export function NasabahShell({ children }: { children: ReactNode }) {
               <span className="text-caption text-muted">Ruang nasabah</span>
             </span>
           </Link>
-          <Badge variant="info">Prototype</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="info">Prototype</Badge>
+            <LogoutButton />
+          </div>
         </div>
       </header>
 

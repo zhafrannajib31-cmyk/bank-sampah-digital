@@ -6,10 +6,6 @@ import { SESSION_COOKIE, isRole, resolveAccess } from "@/lib/auth";
  * Ini cek optimistik; be-bsd tetap penentu akses data.
  */
 export function proxy(request: NextRequest) {
-  // shortcut: mode mock (tanpa NEXT_PUBLIC_API_URL) tidak dijaga karena belum ada halaman login
-  // dan tidak ada data nyata; hapus saat Tahap 2 (login + sesi) selesai.
-  if (!process.env.NEXT_PUBLIC_API_URL) return NextResponse.next();
-
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   const decision = resolveAccess(request.nextUrl.pathname, isRole(cookie) ? cookie : null);
 

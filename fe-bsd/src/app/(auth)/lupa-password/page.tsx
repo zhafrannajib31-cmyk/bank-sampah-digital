@@ -1,8 +1,22 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { AuthCard, linkClass } from "@/features/auth/auth-card";
+import { ForgotForm } from "@/features/auth/forgot-form";
+
+export const metadata: Metadata = { title: "Lupa Kata Sandi" };
+
 export default function LupaPasswordPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-12">
-      <h1 className="text-2xl font-semibold">Lupa Kata Sandi</h1>
-      <p className="text-zinc-600">Halaman lupa kata sandi (placeholder).</p>
-    </main>
+    <AuthCard
+      title="Lupa Kata Sandi"
+      description="Masukkan email akun Anda. Kami kirim tautan untuk mengatur ulang kata sandi."
+      footer={
+        <Link href="/login" className={linkClass}>
+          Kembali ke halaman masuk
+        </Link>
+      }
+    >
+      <ForgotForm />
+    </AuthCard>
   );
 }
