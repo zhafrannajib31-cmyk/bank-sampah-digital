@@ -19,6 +19,7 @@ import { calculateEstimate } from "@/features/nasabah/prototype-api";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
 import { newIdempotencyKey, userMessage } from "@/lib/api";
+import { OFFLINE_MESSAGE } from "@/lib/use-online";
 
 export default function RingkasanSetoranPage() {
   const router = useRouter();
@@ -39,6 +40,10 @@ export default function RingkasanSetoranPage() {
 
   async function handleSubmit() {
     if (!draft) return;
+    if (!navigator.onLine) {
+      setError(OFFLINE_MESSAGE);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {

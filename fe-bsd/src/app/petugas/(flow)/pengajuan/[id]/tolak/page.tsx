@@ -8,6 +8,7 @@ import { CategoryTile, CheckBadge } from "@/features/nasabah/category-tile";
 import { StepScreen } from "@/features/nasabah/step-screen";
 import { rejectDeposit, usePetugasDeposits } from "@/features/petugas/store";
 import { cn } from "@/lib/cn";
+import { OFFLINE_MESSAGE } from "@/lib/use-online";
 
 const reasons = [
   {
@@ -64,6 +65,10 @@ export default function TolakPengajuanPage() {
 
   function submit() {
     if (!deposit) return;
+    if (!navigator.onLine) {
+      setError(OFFLINE_MESSAGE);
+      return;
+    }
     const text = reason.id === "lainnya" ? note.trim() : reason.title;
     if (reason.id === "lainnya" && text.length < MIN_NOTE) {
       setError(`Tulis alasan minimal ${MIN_NOTE} karakter.`);

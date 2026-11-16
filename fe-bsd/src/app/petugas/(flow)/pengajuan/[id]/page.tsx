@@ -13,6 +13,7 @@ import {
 } from "@/features/nasabah/format";
 import { acceptDeposit, usePetugasDeposits } from "@/features/petugas/store";
 import { cn } from "@/lib/cn";
+import { useOnline } from "@/lib/use-online";
 
 const steps = [
   "Periksa jenis dan kondisi sampah.",
@@ -25,6 +26,7 @@ export default function DetailPengajuanPage() {
   const router = useRouter();
   const deposit = usePetugasDeposits().find((candidate) => candidate.id === id);
   const [askReject, setAskReject] = useState(false);
+  const online = useOnline();
 
   if (!deposit) {
     return (
@@ -176,8 +178,8 @@ export default function DetailPengajuanPage() {
             </button>
             <button
               type="button"
-              disabled={pickup}
-              title={pickup ? "Penjemputan belum didukung" : undefined}
+              disabled={pickup || !online}
+              title={pickup ? "Penjemputan belum didukung" : online ? undefined : "Sedang offline"}
               onClick={() => {
                 acceptDeposit(deposit.id);
                 router.push(`/petugas/pengajuan/${deposit.id}/periksa`);

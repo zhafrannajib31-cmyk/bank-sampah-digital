@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { OfflineBanner } from "@/components/offline-banner";
 import { PwaRegister } from "@/components/pwa-register";
 import { Inter, Plus_Jakarta_Sans, Poppins } from "next/font/google";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-surface font-sans text-foreground">
         {children}
+        <OfflineBanner />
         <PwaRegister />
       </body>
     </html>

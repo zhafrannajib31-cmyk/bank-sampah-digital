@@ -16,6 +16,7 @@ import { formatRupiah, formatWeight } from "@/features/nasabah/format";
 import { categories } from "@/features/nasabah/mock-data";
 import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
 import { usePetugasDeposits, weighDeposit } from "@/features/petugas/store";
+import { useOnline } from "@/lib/use-online";
 
 /** 2 -> "2,0", 2.5 -> "2,5", agar sama dengan tampilan angka di desain. */
 const toText = (value: number) =>
@@ -28,6 +29,7 @@ export default function TimbangSampahPage() {
   const [typed, setTyped] = useState<Record<string, string>>({});
   const [showErrors, setShowErrors] = useState(false);
   const [askCancel, setAskCancel] = useState(false);
+  const online = useOnline();
 
   if (!deposit || deposit.status !== "diproses") {
     return (
@@ -144,7 +146,9 @@ export default function TimbangSampahPage() {
         >
           Batalkan Setoran
         </button>
-        <StepNext onClick={save}>Konfirmasi Transaksi</StepNext>
+        <StepNext disabled={!online} onClick={save}>
+          {online ? "Konfirmasi Transaksi" : "Sedang offline"}
+        </StepNext>
       </StepActions>
 
       <ConfirmDialog
