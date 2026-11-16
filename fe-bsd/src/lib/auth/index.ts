@@ -1,4 +1,11 @@
 /**
- * Session dan guard route per role (placeholder).
+ * Session dan guard route per role.
  */
-export {};
+export {
+  SESSION_COOKIE,
+  isRole,
+  resolveAccess,
+  roleHome,
+  type AccessDecision,
+  type Role,
+} from "./guard";
