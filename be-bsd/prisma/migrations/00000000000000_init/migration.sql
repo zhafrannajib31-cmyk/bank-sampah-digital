@@ -1,0 +1,2 @@
+-- Baseline migration (schema saat ini belum memiliki model tabel aplikasi).
+-- Migration tooling Prisma siap digunakan; migrasi berikutnya akan ditambahkan saat skema diperbarui.
