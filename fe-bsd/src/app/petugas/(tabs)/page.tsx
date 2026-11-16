@@ -24,12 +24,19 @@ export default function PetugasBerandaPage() {
 
   return (
     <div className="min-h-dvh bg-mist">
-      <div className="relative h-[210px] overflow-hidden">
+      <div className="relative h-[210px] overflow-hidden lg:overflow-visible">
         <Asset
           src="/nasabah/home-header-blob.svg"
           width={588}
           height={379}
-          className="absolute top-[-117px] left-1/2 h-[379px] w-[max(588px,100%)] max-w-none -translate-x-1/2"
+          className="absolute top-[-117px] left-1/2 h-[379px] w-[max(588px,100%)] max-w-none -translate-x-1/2 lg:hidden"
+        />
+        {/* Desktop: elips Figma 1280 px (sama dengan Beranda Nasabah). */}
+        <Asset
+          src="/nasabah/home-header-blob-desktop.svg"
+          width={1280}
+          height={262}
+          className="absolute top-0 left-0 hidden h-auto w-full lg:block"
         />
         <div className="relative mx-auto w-full max-w-[430px] px-5 pt-10 md:max-w-[720px] lg:max-w-[1180px]">
           <div className="flex h-11 items-center justify-between">
@@ -45,7 +52,7 @@ export default function PetugasBerandaPage() {
         </div>
       </div>
 
-      <div className="mx-auto -mt-[66px] grid max-w-[430px] gap-5 px-5 pb-6 md:max-w-[720px] md:grid-cols-2 md:items-start lg:max-w-[1180px] lg:grid-cols-3">
+      <div className="relative mx-auto -mt-[66px] grid max-w-[430px] gap-5 px-5 pb-6 md:max-w-[720px] md:grid-cols-2 md:items-start lg:max-w-[1180px] lg:grid-cols-3">
         <div className="flex flex-col gap-5 md:col-start-1 md:row-start-1">
           <section
             aria-label="Ringkasan antrean"
