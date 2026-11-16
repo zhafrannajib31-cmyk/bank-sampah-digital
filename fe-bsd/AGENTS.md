@@ -1,19 +1,22 @@
 # fe-bsd (Next.js PWA + website publik)
 
 ## Stack
+
 Next.js (App Router), TypeScript strict, Tailwind. PWA: manifest + service worker.
 
 ## Struktur yang dianjurkan
-- src/app/(public)/    : website publik (Beranda, Tentang, Cara Kerja, Artikel, Kontak)
-- src/app/(auth)/      : login, register, lupa password
-- src/app/nasabah/     : halaman nasabah
-- src/app/petugas/     : halaman petugas
-- src/app/admin/       : halaman admin
-- src/components/ui/   : komponen reusable (button, input, badge status, empty/loading/error state)
-- src/lib/api/         : client API tunggal ke be-bsd (jangan fetch tersebar di komponen)
-- src/lib/auth/        : session, guard route per role
+
+- src/app/(public)/ : website publik (Beranda, Tentang, Cara Kerja, Artikel, Kontak)
+- src/app/(auth)/ : login, register, lupa password
+- src/app/nasabah/ : halaman nasabah
+- src/app/petugas/ : halaman petugas
+- src/app/admin/ : halaman admin
+- src/components/ui/ : komponen reusable (button, input, badge status, empty/loading/error state)
+- src/lib/api/ : client API tunggal ke be-bsd (jangan fetch tersebar di komponen)
+- src/lib/auth/ : session, guard route per role
 
 ## Aturan
+
 - Semua halaman wajib punya loading state, empty state, dan error state.
 - Form: validasi di client (zod) untuk UX, tetapi server tetap penentu. Pesan error bahasa Indonesia, jelas.
 - Proteksi route per role di middleware; jangan hanya menyembunyikan menu.

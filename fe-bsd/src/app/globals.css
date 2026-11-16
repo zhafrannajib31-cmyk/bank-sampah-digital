@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens — sumber nilai: fe-bsd/Design/design-tokens.json
+ * Nama token Figma yang mengandung spasi/kolon dipetakan ke nama aman Tailwind,
+ * contoh "normal :hover" -> --color-green-normal-hover.
+ */
+@theme {
+  /* Font */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Typography mobile (Poppins) */
+  --text-display: 40px;
+  --text-display--line-height: 44px;
+  --text-display--font-weight: 700;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --text-h1: 33px;
+  --text-h1--line-height: 38px;
+  --text-h1--font-weight: 700;
+
+  --text-h2: 27.5px;
+  --text-h2--line-height: 33px;
+  --text-h2--font-weight: 700;
+
+  --text-h3: 23px;
+  --text-h3--line-height: 29px;
+  --text-h3--font-weight: 600;
+
+  --text-h4: 19px;
+  --text-h4--line-height: 25px;
+  --text-h4--font-weight: 600;
+
+  --text-body-lg: 17.5px;
+  --text-body-lg--line-height: 26px;
+  --text-body-lg--font-weight: 400;
+
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-body--font-weight: 400;
+
+  --text-body-sm: 14.5px;
+  --text-body-sm--line-height: 21px;
+  --text-body-sm--font-weight: 400;
+
+  --text-caption: 13.5px;
+  --text-caption--line-height: 19px;
+  --text-caption--font-weight: 400;
+
+  /* Foundation colors — green (utama) */
+  --color-green-light: #e6fdee;
+  --color-green-light-hover: #d9fce6;
+  --color-green-light-active: #b0f8cb;
+  --color-green-normal: #00ea56;
+  --color-green-normal-hover: #00d34d;
+  --color-green-normal-active: #00bb45;
+  --color-green-dark: #00b041;
+  --color-green-dark-hover: #008c34;
+  --color-green-dark-active: #006927;
+  --color-green-darker: #00521e;
+
+  /* Foundation colors — brown (netral) */
+  --color-brown-light: #f0ede9;
+  --color-brown-light-hover: #e8e4de;
+  --color-brown-light-active: #cfc7ba;
+  --color-brown-normal: #654a21;
+  --color-brown-normal-hover: #5b431e;
+  --color-brown-normal-active: #513b1a;
+  --color-brown-dark: #4c3819;
+  --color-brown-dark-hover: #3d2c14;
+  --color-brown-dark-active: #2d210f;
+  --color-brown-darker: #231a0c;
+
+  /* Foundation colors — blue (aksen) */
+  --color-blue-light: #e7f6fd;
+  --color-blue-light-hover: #dbf2fc;
+  --color-blue-light-active: #b4e3f8;
+  --color-blue-normal: #0ea5e9;
+  --color-blue-normal-hover: #0d95d2;
+  --color-blue-normal-active: #0b84ba;
+  --color-blue-dark: #0b7caf;
+  --color-blue-dark-hover: #08638c;
+  --color-blue-dark-active: #064a69;
+  --color-blue-darker: #053a52;
+
+  /* Alias semantik */
+  --color-primary: #00ea56;
+  --color-primary-hover: #00d34d;
+  --color-primary-active: #00bb45;
+  --color-primary-soft: #e6fdee;
+  --color-primary-strong: #00521e;
+
+  --color-accent: #0ea5e9;
+  --color-accent-soft: #e7f6fd;
+  --color-accent-strong: #053a52;
+
+  --color-foreground: #231a0c;
+  --color-muted: #654a21;
+  --color-border: #cfc7ba;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f0ede9;
+
+  /* Danger/error — tambahan semantik di luar token Figma (disetujui BSD-16) */
+  --color-danger-soft: #fee2e2;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-dark: #991b1b;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background-color: var(--color-green-light-active);
+  color: var(--color-foreground);
 }
