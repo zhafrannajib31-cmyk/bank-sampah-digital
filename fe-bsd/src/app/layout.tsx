@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaRegister } from "@/components/pwa-register";
 import { Inter, Plus_Jakarta_Sans, Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -31,7 +32,11 @@ export const metadata: Metadata = {
   },
   description:
     "Platform digital untuk mengajukan setoran sampah, menimbang, dan memantau transaksi Bank Sampah.",
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "BSD", statusBarStyle: "default" },
 };
+
+export const viewport: Viewport = { themeColor: "#00c65c" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -41,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-surface font-sans text-foreground">
         {children}
+        <PwaRegister />
       </body>
     </html>
   );
