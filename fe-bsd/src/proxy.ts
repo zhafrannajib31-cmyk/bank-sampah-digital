@@ -6,6 +6,9 @@ import { SESSION_COOKIE, isRole, resolveAccess } from "@/lib/auth";
  * Ini cek optimistik; be-bsd tetap penentu akses data.
  */
 export function proxy(request: NextRequest) {
+  // Berkas statis di public/nasabah dan public/petugas (gambar, ikon) bukan halaman; jangan dijaga.
+  if (/\.[a-z0-9]+$/i.test(request.nextUrl.pathname)) return NextResponse.next();
+
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   const decision = resolveAccess(request.nextUrl.pathname, isRole(cookie) ? cookie : null);
 
