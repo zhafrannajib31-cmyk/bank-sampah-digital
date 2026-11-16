@@ -63,6 +63,10 @@ export interface Deposit {
   cancelledAt?: string;
   cancelledBy?: string;
   completedAt?: string;
+  /** Hanya dipakai sisi petugas: nama nasabah pengaju. */
+  customerName?: string;
+  /** Metode setor; default antar sendiri. */
+  method?: "antar" | "pickup";
   officerName?: string;
   items: DepositItem[];
   events: DepositEvent[];

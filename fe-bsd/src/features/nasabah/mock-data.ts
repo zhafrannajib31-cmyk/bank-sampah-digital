@@ -95,7 +95,7 @@ function seedItem(depositId: string, categoryId: string, estimated: number, actu
   };
 }
 
-function seedDeposit(
+export function seedDeposit(
   code: string,
   unitId: string,
   status: Deposit["status"],
