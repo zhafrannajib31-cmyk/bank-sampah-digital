@@ -19,18 +19,30 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({ email });
 
+const whatsapp = z
+  .string()
+  .transform(normalizeWhatsapp)
+  .pipe(
+    z
+      .string()
+      .regex(/^\+628[1-9][0-9]{7,11}$/, "Nomor WhatsApp tidak valid, contoh: 0812 3456 7890."),
+  );
+
+/** Tampilan nomor ternormalisasi: +62 812 3456 7890. */
+export function formatWhatsapp(normalized: string): string {
+  const rest = normalized.replace(/^\+62/, "");
+  return `+62 ${rest.slice(0, 3)} ${rest.slice(3, 7)} ${rest.slice(7)}`.trim();
+}
+
+const personName = z.string().trim().min(1, "Nama lengkap wajib diisi.");
+
+export const profileSchema = z.object({ name: personName, whatsapp });
+
 export const registerSchema = z
   .object({
-    name: z.string().trim().min(1, "Nama lengkap wajib diisi."),
+    name: personName,
     email,
-    whatsapp: z
-      .string()
-      .transform(normalizeWhatsapp)
-      .pipe(
-        z
-          .string()
-          .regex(/^\+628[1-9][0-9]{7,11}$/, "Nomor WhatsApp tidak valid, contoh: 0812 3456 7890."),
-      ),
+    whatsapp,
     password: z.string().min(8, "Kata sandi minimal 8 karakter."),
     confirmPassword: z.string(),
     acceptedTerms: z.literal(true, "Anda perlu menyetujui Syarat & Ketentuan."),

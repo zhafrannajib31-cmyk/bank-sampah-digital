@@ -73,12 +73,12 @@ export default function ProfilPage() {
         <section aria-label="Data diri" className="rounded-[18px] border border-[#e3ece6] bg-white">
           <div className="flex h-[38px] items-center justify-between px-4 pt-2">
             <h2 className="text-[14px] font-bold text-heading">Data Diri</h2>
-            <span
-              className="text-[12px] font-semibold text-green-dark-active underline opacity-60"
-              title="Ubah data belum tersedia"
+            <Link
+              href="/nasabah/profil/ubah"
+              className="inline-flex min-h-11 items-center text-[12px] font-semibold text-green-dark-active underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               Ubah
-            </span>
+            </Link>
           </div>
           {[
             ["Email", profile.email],
