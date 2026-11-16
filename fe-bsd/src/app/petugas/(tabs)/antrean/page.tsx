@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { EmptyState } from "@/components/ui";
+import { Asset } from "@/components/ui";
 import { GroupLabel } from "@/features/nasabah/deposit-ui";
 import type { Deposit } from "@/features/nasabah/types";
 import { OFFICER_UNIT } from "@/features/petugas/mock-data";
@@ -38,7 +38,11 @@ export default function AntreanPage() {
       <header className="bg-white px-5 pt-[50px] pb-1">
         <h1 className="text-[22px] leading-[28px] font-bold text-heading">Antrean Pengajuan</h1>
         <p className="text-[12px] leading-[16px] text-[#64766d]">
-          Pengajuan nasabah {OFFICER_UNIT} (simulasi)
+          {tab === "diproses"
+            ? "Sedang diperiksa dan ditimbang (simulasi)"
+            : list.length === 0 && tab === "menunggu"
+              ? `Belum ada pengajuan di ${OFFICER_UNIT} (simulasi)`
+              : `Pengajuan nasabah ${OFFICER_UNIT} (simulasi)`}
         </p>
         <div
           role="group"
@@ -66,10 +70,22 @@ export default function AntreanPage() {
 
       <div className="px-5 pt-[18px]">
         {list.length === 0 ? (
-          <EmptyState
-            title="Belum ada pengajuan"
-            description="Pengajuan baru dari nasabah akan muncul di sini."
-          />
+          <div className="flex flex-col items-center px-5 pt-[88px] pb-10 text-center">
+            <Asset src="/petugas/empty-clock.svg" width={44} height={44} />
+            <h2 className="mt-[22px] text-[14px] leading-[18px] font-semibold text-heading">
+              Belum ada pengajuan
+            </h2>
+            <p className="mt-[16px] max-w-[260px] text-[12px] leading-[17px] text-[#64766d]">
+              Pengajuan baru dari nasabah {OFFICER_UNIT} akan muncul di sini.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-[36px] flex h-[49px] w-[180px] items-center justify-center rounded-[28px] border border-[#00ea56] bg-white font-sans text-[16px] font-semibold text-green-dark-active focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              Muat Ulang
+            </button>
+          </div>
         ) : (
           <>
             <GroupLabel>HARI INI · 16 NOV 2026</GroupLabel>

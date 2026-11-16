@@ -10,11 +10,14 @@ export function HasilSummary({
   deposit,
   noticeTitle,
   noticeText,
+  noticeTone = "info",
 }: {
   deposit: Deposit;
   noticeTitle: string;
   noticeText: ReactNode;
+  noticeTone?: "info" | "error";
 }) {
+  const error = noticeTone === "error";
   const total = deposit.items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0);
 
   return (
@@ -90,7 +93,10 @@ export function HasilSummary({
         </p>
       </section>
 
-      <section className="flex gap-4 rounded-[20px] bg-blue-light-active p-[14px]">
+      <section
+        role={error ? "alert" : "status"}
+        className={`flex gap-4 rounded-[20px] p-[14px] ${error ? "bg-[#fee2e2]" : "bg-blue-light-active"}`}
+      >
         <span className="relative flex size-[33px] shrink-0 items-center justify-center self-start">
           <Asset
             src="/nasabah/note-circle.svg"
@@ -106,8 +112,16 @@ export function HasilSummary({
           />
         </span>
         <div className="flex flex-col gap-2">
-          <h2 className="text-[14px] leading-[16.5px] font-medium text-black">{noticeTitle}</h2>
-          <p className="text-[12px] leading-[17px] font-light text-black">{noticeText}</p>
+          <h2
+            className={`text-[14px] leading-[16.5px] font-medium ${error ? "text-[#991b1b]" : "text-black"}`}
+          >
+            {noticeTitle}
+          </h2>
+          <p
+            className={`text-[12px] leading-[17px] font-light ${error ? "text-[#991b1b]" : "text-black"}`}
+          >
+            {noticeText}
+          </p>
         </div>
       </section>
     </>

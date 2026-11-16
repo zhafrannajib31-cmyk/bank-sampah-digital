@@ -150,7 +150,7 @@ export default function TimbangSampahPage() {
       <ConfirmDialog
         open={askCancel}
         title="Batalkan setoran ini?"
-        description="Kamu akan memilih alasan pembatalan. Status setoran menjadi Dibatalkan dan tercatat."
+        description="Pembatalan wajib disertai alasan dan tercatat. Hasil timbang yang sudah diisi tidak disimpan."
         confirmLabel="Ya, Batalkan"
         onConfirm={() => router.push(`/petugas/pengajuan/${id}/tolak`)}
         onCancel={() => setAskCancel(false)}

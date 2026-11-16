@@ -17,6 +17,7 @@ export default function KonfirmasiTransaksiPage() {
   const [idempotencyKey] = useState(newIdempotencyKey);
   const [processing, setProcessing] = useState(false);
   const [askCancel, setAskCancel] = useState(false);
+  const [failed, setFailed] = useState(false);
   const weighed =
     deposit?.status === "diproses" &&
     deposit.items.every((item) => item.actualWeight !== undefined);
@@ -43,9 +44,16 @@ export default function KonfirmasiTransaksiPage() {
 
   function confirm() {
     if (!deposit) return;
+    setFailed(false);
     setProcessing(true);
     // Simulasi panggilan server: konfirmasi atomik dan idempotent.
     setTimeout(() => {
+      // shortcut: kegagalan disimulasikan dari status offline perangkat; ganti dengan galat jaringan lib/api.
+      if (!navigator.onLine) {
+        setProcessing(false);
+        setFailed(true);
+        return;
+      }
       confirmDeposit(deposit.id, idempotencyKey);
       router.replace(`/petugas/pengajuan/${deposit.id}/berhasil`);
     }, 700);
@@ -55,14 +63,29 @@ export default function KonfirmasiTransaksiPage() {
     <StepScreen>
       <StepHeader
         title="Konfirmasi Transaksi"
-        subtitle={`${deposit.code} · QR tervalidasi`}
+        subtitle={`${deposit.code} · ${failed ? "Gagal" : processing ? "Memproses" : "QR tervalidasi"}`}
         backHref={`/petugas/pengajuan/${id}/scan`}
       />
-      <HasilSummary
-        deposit={deposit}
-        noticeTitle="QR Tervalidasi"
-        noticeText="Periksa data sekali lagi. Konfirmasi hanya sekali dan tidak dapat diulang."
-      />
+      {failed ? (
+        <HasilSummary
+          deposit={deposit}
+          noticeTone="error"
+          noticeTitle="Koneksi Terputus"
+          noticeText="Transaksi belum tersimpan. Aman untuk coba lagi: tidak akan tercatat ganda."
+        />
+      ) : processing ? (
+        <HasilSummary
+          deposit={deposit}
+          noticeTitle="Memproses Transaksi…"
+          noticeText="Mohon tunggu. Jangan tutup halaman ini; konfirmasi hanya diproses sekali."
+        />
+      ) : (
+        <HasilSummary
+          deposit={deposit}
+          noticeTitle="QR Tervalidasi"
+          noticeText="Periksa data sekali lagi. Konfirmasi hanya sekali dan tidak dapat diulang."
+        />
+      )}
       <StepActions>
         <button
           type="button"
@@ -73,7 +96,7 @@ export default function KonfirmasiTransaksiPage() {
           Batal
         </button>
         <StepNext arrow={false} disabled={processing} onClick={confirm}>
-          {processing ? "Memproses…" : "Konfirmasi Transaksi"}
+          {processing ? "Memproses…" : failed ? "Coba Lagi" : "Konfirmasi Transaksi"}
         </StepNext>
       </StepActions>
 
