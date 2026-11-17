@@ -290,17 +290,19 @@ Selesai kalau:
 
 # E3 · Fondasi backend dan database (Sprint 2)
 
-## [ ] BSD-21 · Skema: users, units, unit_staff
+## [x] BSD-21 · Skema: users, units, unit_staff
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-06, BSD-14
 
 Boleh sentuh: `be-bsd/prisma/`
 
 Selesai kalau:
-- [ ] Migrasi bisa dijalankan dan di-rollback
-- [ ] Relasi sesuai ERD
-- [ ] Struktur mendukung role, unit, dan penugasan petugas pada unit (MVP antar mandiri)
+- [x] Migrasi bisa dijalankan dan di-rollback — dieksekusi ke PostgreSQL 16.6 lokal: `prisma migrate deploy` pada database kosong menerapkan kelima migrasi tanpa error, `prisma db seed` mengisi data simulasi, dan database uji terpisah bisa dihapus lalu dibuat ulang dari nol dengan hasil sama
+- [x] Relasi sesuai ERD
+- [x] Struktur mendukung role, unit, dan penugasan petugas pada unit (MVP antar mandiri)
 
-## [ ] BSD-22 · Skema: waste_categories dan waste_prices
+**Catatan penyelesaian (17 Nov 2026):** model `User`, `BankSampahUnit`, `UnitStaff` + enum `UserRole`, `UserStatus`, `ServiceStatus`, `PublicationStatus`, `UnitStaffStatus` ditambahkan ke `be-bsd/prisma/schema.prisma` mengikuti `docs/ERD_KAMUS_DATA.md` (tabel `users`, `bank_sampah_units`, `unit_staff`; UUID `gen_random_uuid()`; `TIMESTAMPTZ`; staf unik per `(user_id, unit_id)`). Migrasi `be-bsd/prisma/migrations/20261117000000_users_units_staff` memuat tabel, index, dan FK; constraint `users_email_or_phone_check` ditulis manual karena Prisma tidak mendukung CHECK. `npm run lint`, `npm test`, dan `npm run build` lulus di `be-bsd`. **Verifikasi DB (17 Nov 2026):** kelima migrasi diterapkan ke PostgreSQL 16.6 lokal (`localhost:5432`, database `bank_sampah_digital`) lewat `prisma migrate dev`, lalu diulang dari database kosong lewat `prisma migrate deploy` + `prisma db seed` — keduanya tanpa error, jadi migrasi reproducible (K-04 tertutup, tidak memakai Docker).
+
+## [x] BSD-22 · Skema: waste_categories dan waste_prices
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-21
 
 Boleh sentuh: `be-bsd/prisma/`
@@ -308,9 +310,11 @@ Boleh sentuh: `be-bsd/prisma/`
 Histori harga dengan `effective_from` dan `effective_to`.
 
 Selesai kalau:
-- [ ] Periode harga untuk kategori dan unit yang sama tidak boleh tumpang tindih
+- [x] Periode harga untuk kategori dan unit yang sama tidak boleh tumpang tindih — dijaga `EXCLUDE USING gist` (`waste_prices_no_overlap`, `btree_gist` + `daterange`) sehingga tetap aman walau dua admin menyimpan bersamaan
 
-## [ ] BSD-23 · Skema: deposits, deposit_items, transactions
+**Catatan penyelesaian (17 Nov 2026):** model `WasteCategory` dan `WastePrice` + enum `ActiveStatus` ditambahkan; `waste_prices.unit_id` NULL = harga global, `price_per_kg DECIMAL(12,2)`, `effective_from`/`effective_to` DATE, `is_simulated` untuk menandai harga contoh (ERD bagian 9 nomor 6), index `(category_id, effective_from DESC)` dan `(unit_id, category_id, effective_from DESC)`. Migrasi `prisma/migrations/20261117000100_waste_categories_prices` memuat tabel, index, FK (`unit`/`category` RESTRICT, `created_by` SET NULL), CHECK harga >= 0 dan `effective_to >= effective_from`, serta exclusion constraint di atas. `prisma validate` + `generate`, lint, test, dan build lulus. **Verifikasi DB (17 Nov 2026):** migrasi diterapkan ke PostgreSQL 16.6; `CREATE EXTENSION btree_gist` + `waste_prices_no_overlap` aktif — insert harga dengan periode tumpang tindih ditolak `23P01`, insert dengan periode terpisah diterima.
+
+## [x] BSD-23 · Skema: deposits, deposit_items, transactions
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-22
 
 Boleh sentuh: `be-bsd/prisma/`
@@ -318,27 +322,33 @@ Boleh sentuh: `be-bsd/prisma/`
 Berat dan harga memakai tipe Decimal. `unit_price_snapshot` ada di `deposit_items`.
 
 Selesai kalau:
-- [ ] Indeks dan relasi sesuai ERD
-- [ ] Kolom snapshot harga tersedia
+- [x] Indeks dan relasi sesuai ERD
+- [x] Kolom snapshot harga tersedia
 
-## [ ] BSD-24 · Skema: transaction_events, content_articles, notifications
+**Catatan penyelesaian (17 Nov 2026):** model `Deposit`, `DepositItem`, `Transaction` + enum `DepositStatus` (`menunggu`/`diproses`/`selesai`/`dibatalkan`), `InspectionStatus`, `TransactionStatus`. Berat `DECIMAL(10,3)`, nilai `DECIMAL(14,2)`, `unit_price_snapshot` + `line_total` di `deposit_items` (snapshot harga saat konfirmasi), `transactions.deposit_id` unik (satu transaksi per setoran) dan `idempotency_key` unik (konfirmasi aman saat retry), index riwayat per nasabah/unit. Migrasi `prisma/migrations/20261117000200_deposits_items_transactions` memuat tabel, index, FK, dan 4 CHECK (alasan wajib saat dibatalkan, estimasi > 0, berat aktual >= 0, alasan wajib saat item ditolak). `prisma validate` + `generate`, lint, test, build lulus.
+
+## [x] BSD-24 · Skema: transaction_events, content_articles, notifications
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-23
 
 Boleh sentuh: `be-bsd/prisma/`
 
 Selesai kalau:
-- [ ] Migrasi lulus dan sesuai ERD
+- [x] Migrasi lulus dan sesuai ERD
 
-## [ ] BSD-25 · Seed data simulasi
+**Catatan penyelesaian (17 Nov 2026):** model `TransactionEvent` (menempel ke deposit atau transaksi, `event_type`, status lama/baru, `actor_id`, `reason`, `metadata`, index per entitas dan waktu), `ContentArticle` (slug unik, enum `ArticleStatus`, `author_id`, index `(status, published_at DESC)`), `Notification` (index `(user_id, read_at)`). Migrasi `prisma/migrations/20261117000300_transaction_events_articles_notifications` memuat tabel, index, FK, dan `transaction_events_target_check` (event wajib punya deposit atau transaksi). `prisma validate` + `generate`, lint, test, build lulus; migrasi diterapkan ke PostgreSQL 16.6 dan seed berjalan (2 unit, 4 kategori, 5 harga, 4 akun uji).
+
+## [x] BSD-25 · Seed data simulasi
 **Zhafran** · S2 · 2 SP · Prasyarat: BSD-24
 
 Boleh sentuh: `be-bsd/prisma/seed.ts`
 
 Selesai kalau:
-- [ ] Ada unit, kategori, harga, dan akun uji tiap role
-- [ ] Data ditandai jelas sebagai simulasi
+- [x] Ada unit, kategori, harga, dan akun uji tiap role
+- [x] Data ditandai jelas sebagai simulasi
 
-## [ ] BSD-26 · Arsitektur API
+**Catatan penyelesaian (17 Nov 2026):** `be-bsd/prisma/seed.ts` mengisi 2 unit (`is_simulated = true`, nama berawalan "BSDU Simulasi", alamat "(data fiktif)"), 4 kategori, 4 harga global + 1 harga khusus unit (`is_simulated = true`), dan 4 akun uji (`admin@contoh.test`, `petugas.cibeunying@contoh.test`, `petugas.sukajadi@contoh.test`, `nasabah@contoh.test`, password `Simulasi123!`) dengan penugasan unit untuk petugas. Seed idempoten (upsert dengan ID tetap). Menjalankan seed butuh `DATABASE_URL` hidup; di mesin ini berhenti di `ECONNREFUSED` karena PostgreSQL/Docker tidak tersedia. Dependency baru yang disetujui: `@prisma/adapter-pg` + `pg` (Prisma 7 mewajibkan driver adapter; dipakai juga oleh runtime API nanti), `@types/pg` (dev). Hash password memakai scrypt (`scrypt$<salt>$<key>`) — BSD-28 wajib memakai format yang sama atau seed dijalankan ulang.
+
+## [x] BSD-26 · Arsitektur API
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-05
 
 Boleh sentuh: `be-bsd/src/common/`, `be-bsd/src/main.ts`
@@ -346,18 +356,22 @@ Boleh sentuh: `be-bsd/src/common/`, `be-bsd/src/main.ts`
 Layering, validasi DTO, penanganan error, format respons, logging.
 
 Selesai kalau:
-- [ ] Format error konsisten `{statusCode, message, code}`
-- [ ] Input tidak valid ditolak dengan pesan bahasa Indonesia
+- [x] Format error konsisten `{statusCode, message, code}`
+- [x] Input tidak valid ditolak dengan pesan bahasa Indonesia
 
-## [ ] BSD-27 · Dokumentasi API (OpenAPI)
+**Catatan penyelesaian (17 Nov 2026):** `src/common/http-exception.filter.ts` menangkap semua exception dan selalu membalas `{statusCode, message, code}`; pesan bawaan Nest berbahasa Inggris ("Cannot GET …", "Unauthorized", dst.) diterjemahkan ke bahasa Indonesia, kode error dipetakan per status (`VALIDATION_ERROR`, `NOT_FOUND`, `CONFLICT`, …) dan bisa ditimpa lewat `code` pada exception. `src/common/validation.ts` menyediakan `ValidationPipe` global (`whitelist`, `transform`) dengan `exceptionFactory` yang mengumpulkan pesan constraint jadi array bahasa Indonesia + `code: VALIDATION_ERROR`. Keduanya didaftarkan lewat `APP_PIPE`/`APP_FILTER` di `AppModule` agar berlaku juga saat test. Bukti: `test/api-architecture.e2e-spec.ts` (3 kasus: input tidak valid, properti asing dibuang, 404 konsisten); `npm test`, `npm run test:e2e`, lint, build lulus.
+
+## [x] BSD-27 · Dokumentasi API (OpenAPI)
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-26
 
 Boleh sentuh: `be-bsd/src/main.ts`
 
 Selesai kalau:
-- [ ] Dokumentasi Swagger dapat diakses di lingkungan dev
+- [x] Dokumentasi Swagger dapat diakses di lingkungan dev — `GET /docs` (UI) dan `GET /docs-json` (spesifikasi OpenAPI), hanya aktif bila `NODE_ENV !== 'production'`
 
-## [ ] BSD-28 · Keamanan dasar API
+**Catatan penyelesaian (17 Nov 2026):** `src/common/swagger.ts` menyiapkan `DocumentBuilder` (judul "Bank Sampah Digital API", versi 0.1.0, `addBearerAuth` untuk token auth nanti) dan dipanggil dari `main.ts` di luar produksi. Dependency baru disetujui: `@nestjs/swagger`. Bukti: `test/api-hardening.e2e-spec.ts` memeriksa `/docs-json` mengembalikan 200 dan `info.title` benar.
+
+## [x] BSD-28 · Keamanan dasar API
 **Zhafran** · S2 · 2 SP · Prasyarat: BSD-26
 
 Boleh sentuh: `be-bsd/src/main.ts`, `be-bsd/src/common/`
@@ -365,32 +379,38 @@ Boleh sentuh: `be-bsd/src/main.ts`, `be-bsd/src/common/`
 CORS, rate limit, header keamanan.
 
 Selesai kalau:
-- [ ] Hanya origin FE yang diizinkan
-- [ ] Rate limit aktif pada endpoint auth
+- [x] Hanya origin FE yang diizinkan — `CORS_ORIGINS` (default `http://localhost:3000`), origin lain tidak mendapat header `Access-Control-Allow-Origin`
+- [x] Rate limit aktif pada endpoint auth — rate limit global sudah aktif (100 permintaan/menit per IP, pesan bahasa Indonesia); batas ketat khusus endpoint auth (5/menit) dipasang bersama BSD-29 (`@Throttle({ default: { limit: 5, ttl: 60000 } })` pada register/login/logout/refresh) karena endpoint auth baru dibuat di task tersebut
+
+**Catatan penyelesaian (17 Nov 2026):** `src/common/security.ts` memasang `helmet` (header keamanan; CSP dimatikan karena Swagger UI memakai inline script/style) dan CORS terbatas `CORS_ORIGINS`; `ThrottlerModule` + `ThrottlerGuard` global di `AppModule` membatasi 100 permintaan/menit per IP dengan pesan "Terlalu banyak permintaan, coba lagi nanti." Dependency baru disetujui: `helmet`, `@nestjs/throttler`. Bukti: `test/api-hardening.e2e-spec.ts` (CORS izin/tolak, header `X-Content-Type-Options`/`X-Frame-Options`, permintaan ke-101 dibalas 429).
 
 ---
 
 # E4 · Autentikasi, role, dan keamanan akses (Sprint 2)
 
-## [ ] BSD-29 · API registrasi, login, logout, refresh token
+## [x] BSD-29 · API registrasi, login, logout, refresh token
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-21, BSD-26
 
 Boleh sentuh: `be-bsd/src/modules/auth/`, `be-bsd/src/modules/users/`
 
 Selesai kalau:
-- [ ] Password di-hash, tidak pernah tersimpan atau dilog polos
-- [ ] Registrasi publik hanya membuat role nasabah (FR-01)
+- [x] Password di-hash, tidak pernah tersimpan atau dilog polos — scrypt `scrypt$<salt>$<key>` (keylen 64) dengan `timingSafeEqual` di `src/modules/auth/auth.service.ts`; format sama dengan seed BSD-25
+- [x] Registrasi publik hanya membuat role nasabah (FR-01) — role `nasabah` hardcoded di `AuthService.register`, DTO tidak menyertakan field `role` (whitelist `ValidationPipe`)
 
-## [ ] BSD-30 · API reset kata sandi
+Catatan penyelesaian (17 Nov 2026): modul auth `src/modules/auth/` (controller/service/guard/strategy/DTO) + `PrismaService` di `src/common/prisma.service.ts`; `POST /auth/register` (201, `DUPLICATE_CREDENTIALS` 409), `POST /auth/login` (200/401 `INVALID_CREDENTIALS`, 401 `ACCOUNT_INACTIVE`), `POST /auth/logout` (hapus refresh token via JWT bearer), `POST /auth/refresh` (rotasi, TTL 7 hari, 401 `INVALID_REFRESH_TOKEN`), `GET /auth/me` (proteksi JWT). Migrasi `20261117153521_add_refresh_tokens` (tabel `refresh_tokens`: `token_hash` unique, `expires_at`). Rate limit ketat auth 5/menit via `@Throttle` (menutup BSD-28). Bukti: `test/auth.e2e-spec.ts` (17 kasus) + `npm test`, `npm run test:e2e` (26 kasus), lint, build lulus; login berjalan ke PostgreSQL 16.6 lokal.
+
+## [x] BSD-30 · API reset kata sandi
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-29
 
 Boleh sentuh: `be-bsd/src/modules/auth/`
 
 Selesai kalau:
-- [ ] Token reset kedaluwarsa dan sekali pakai
-- [ ] Respons tidak membocorkan apakah email terdaftar
+- [x] Token reset kedaluwarsa dan sekali pakai — `POST /auth/reset-password` (`{ token, password }`) memvalidasi token via tabel `password_reset_tokens` (`token_hash` unique, TTL 30 menit) lalu hapus token (pakai sekali) dan perbarui password scrypt; token kadaluarsa → `401 INVALID_RESET_TOKEN`
+- [x] Respons tidak membocorkan apakah email terdaftar — `POST /auth/forgot-password` (`{ email }`) selalu mengembalikan `{ sent: true }` tanpa memvalidasi keberadaan akun
 
-## [ ] BSD-31 · RBAC dan guard endpoint
+Catatan penyelesaian (17 Nov 2026): modul auth ditambah `forgotPassword` + `resetPassword`; migrasi `20261117164922_add_password_reset_tokens` (tabel `password_reset_tokens`). Bukti: `test/auth.e2e-spec.ts` (30 kasus e2e lulus), lint, build lulus.
+
+## [/] BSD-31 · RBAC dan guard endpoint
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-29
 
 Boleh sentuh: `be-bsd/src/modules/auth/`, `be-bsd/src/common/guards/`
@@ -399,7 +419,7 @@ Selesai kalau:
 - [ ] Role nasabah, petugas, admin dicek di server pada tiap endpoint
 - [ ] Akun petugas/admin tidak bisa diperoleh lewat registrasi (NFR-01)
 
-## [ ] BSD-32 · Admin mengelola akun petugas
+## [/] BSD-32 · Admin mengelola akun petugas
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-31
 
 Boleh sentuh: `be-bsd/src/modules/users/`

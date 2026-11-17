@@ -1,8 +1,8 @@
-# CATATAN PENGERJAAN – Bank Sampah Digital
+﻿# CATATAN PENGERJAAN – Bank Sampah Digital
 
 Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusan, kendala, dan perubahan kebutuhan. Dokumen ini diperbarui **setiap akhir hari kerja/sprint** dan menjadi pasangan dari dokumen BACKLOG (rujukan ID task: BSD-xx).
 
-**Versi:** 1.0  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 12 November 2026
+**Versi:** 1.0  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 17 November 2026
 
 ## 1. Cara Menggunakan Dokumen Ini
 
@@ -16,11 +16,11 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 | Item | Status |
 | --- | --- |
-| Fase saat ini | Pra-Sprint 1 (persiapan dan perencanaan) |
-| Sprint berjalan | Belum dimulai (usulan mulai 16 November 2026) |
+| Fase saat ini | Pengembangan MVP (E3 – fondasi backend dan database) |
+| Sprint berjalan | Sprint 2 (dikerjakan mulai 17 November 2026) |
 | Total task di backlog | 103 task (BSD-01 s.d. BSD-103) |
-| Task selesai | 17 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4) |
-| Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP |
+| Task selesai | 27 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-30 (seluruh fondasi backend: skema database, seed simulasi, arsitektur API, OpenAPI, keamanan dasar, modul auth, reset kata sandi) selesai 17 Nov 2026 — E3 selesai, E4 berjalan |
+| Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
 ## 3. Progres per Epic
@@ -29,8 +29,8 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | --- | --- | --- | --- | --- |
 | E1 | Inisiasi proyek dan setup | 1 | 9 / 9 | Selesai |
 | E2 | Analisis kebutuhan dan desain UX | 1 | 8 / 11 | Sedang berjalan |
-| E3 | Fondasi backend dan database | 2 | 0 / 8 | Belum mulai |
-| E4 | Autentikasi, role, dan keamanan | 2 | 0 / 8 | Belum mulai |
+| E3 | Fondasi backend dan database | 2 | 8 / 8 | Selesai (migrasi & seed terverifikasi di PostgreSQL 16.6 lokal, K-04 tertutup; batas rate limit khusus endpoint auth menyusul BSD-29) |
+|| E4 | Autentikasi, role, dan keamanan akses | 2 | 2 / 8 | Sedang berjalan (BSD-29, BSD-30 selesai; BSD-31–32 dalam pengerjaan) |
 | E5 | Data master | 2–3 | 0 / 7 | Belum mulai |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 0 / 7 | Belum mulai |
@@ -89,9 +89,26 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 
 | Tanggal | ID Task | Pekerjaan yang Dilakukan | Pelaksana | Hasil / Bukti | Status |
 | --- | --- | --- | --- | --- | --- |
-| *isi* |  |  |  |  |  |
+| 17 Nov 2026 | BSD-21 | Menambahkan skema `users`, `bank_sampah_units`, `unit_staff` beserta enum `UserRole`, `UserStatus`, `ServiceStatus`, `PublicationStatus`, `UnitStaffStatus`; UUID `gen_random_uuid()`, waktu `TIMESTAMPTZ`, `unit_staff` unik per `(user_id, unit_id)`, index status publikasi/layanan dan status staf, FK `ON DELETE RESTRICT`. | Zhafran Najib | `be-bsd/prisma/schema.prisma`; migrasi `prisma/migrations/20261117000000_users_units_staff/migration.sql` (tabel + index + FK + `users_email_or_phone_check`); `npx prisma validate`, `npx prisma generate`, lint, test, build lulus | Selesai (sebagian: migrasi belum dijalankan/di-rollback ke PostgreSQL karena Docker tidak tersedia) |
+| 17 Nov 2026 | BSD-22 | Menambahkan skema `waste_categories`, `waste_prices` (+ enum `ActiveStatus`): `unit_id` NULL = harga global, `price_per_kg DECIMAL(12,2)`, periode `DATE`, `is_simulated`, dua index histori. Anti-tumpang-tindih periode dijaga exclusion constraint `waste_prices_no_overlap` (`btree_gist` + `daterange`, `unit_id` di-`COALESCE`). | Zhafran Najib | `be-bsd/prisma/schema.prisma`; migrasi `prisma/migrations/20261117000100_waste_categories_prices/migration.sql`; `prisma validate` + `generate`, lint, test, build lulus | Selesai (migrasi belum dieksekusi ke PostgreSQL) |
+| 17 Nov 2026 | BSD-23 | Menambahkan skema `deposits`, `deposit_items`, `transactions` (+ enum `DepositStatus`, `InspectionStatus`, `TransactionStatus`): berat `DECIMAL(10,3)`, nilai `DECIMAL(14,2)`, `unit_price_snapshot` + `line_total` di item, `transactions.deposit_id` unik dan `idempotency_key` unik untuk konfirmasi idempoten. | Zhafran Najib | `be-bsd/prisma/schema.prisma`; migrasi `prisma/migrations/20261117000200_deposits_items_transactions/migration.sql` (termasuk 4 CHECK: alasan pembatalan, estimasi > 0, berat aktual >= 0, alasan penolakan item); lint, test, build lulus | Selesai (migrasi belum dieksekusi ke PostgreSQL) |
+| 17 Nov 2026 | BSD-24 | Menambahkan skema `transaction_events`, `content_articles`, `notifications` (+ enum `ArticleStatus`): audit event dengan status lama/baru, aktor, alasan, metadata; artikel slug unik; notifikasi per pengguna dengan index `(user_id, read_at)`. | Zhafran Najib | `be-bsd/prisma/schema.prisma`; migrasi `prisma/migrations/20261117000300_transaction_events_articles_notifications/migration.sql` (`transaction_events_target_check`); lint, test, build lulus | Selesai (migrasi belum dieksekusi ke PostgreSQL) |
+| 17 Nov 2026 | BSD-25 | Menambahkan `be-bsd/prisma/seed.ts` (idempoten, upsert ID tetap): 2 unit simulasi (`is_simulated = true`, label "BSDU Simulasi", alamat "(data fiktif)"), 4 kategori, 4 harga global + 1 harga khusus unit (ditandai `is_simulated`), 4 akun uji tiap role dengan penugasan unit petugas. Menambahkan driver adapter Prisma 7 (`@prisma/adapter-pg`, `pg`, `@types/pg`, disetujui) dan `migrations.seed` di `prisma7.config.ts`; `tsconfig.json` mendapat `ts-node.experimentalResolver`. | Zhafran Najib | `be-bsd/prisma/seed.ts`, `be-bsd/prisma7.config.ts`, `be-bsd/tsconfig.json`, `be-bsd/package.json`; `tsc --noEmit`, lint, test, build lulus; seed berhenti di `ECONNREFUSED` karena PostgreSQL tidak berjalan | Selesai (sebagian: seed belum dijalankan ke database) |
+| 17 Nov 2026 | BSD-26 | Menambahkan arsitektur API dasar: filter exception global yang selalu membalas `{statusCode, message, code}` (pesan bawaan Nest diterjemahkan ke bahasa Indonesia, kode dipetakan per status dan bisa ditimpa), `ValidationPipe` global (`whitelist`, `transform`) dengan `exceptionFactory` berisi pesan constraint bahasa Indonesia + `code: VALIDATION_ERROR`, didaftarkan lewat `APP_PIPE`/`APP_FILTER` di `AppModule`. Dependency baru disetujui: `class-validator`, `class-transformer`. | Zhafran Najib | `src/common/http-exception.filter.ts`, `src/common/validation.ts`, `src/app.module.ts`, `test/api-architecture.e2e-spec.ts`; `npm test`, `npm run test:e2e` (5 kasus), lint, build lulus | Selesai |
+| 17 Nov 2026 | BSD-27 | Menambahkan dokumentasi OpenAPI: `src/common/swagger.ts` (`DocumentBuilder` judul "Bank Sampah Digital API", versi 0.1.0, `addBearerAuth`) dipanggil dari `main.ts` hanya bila `NODE_ENV !== 'production'`; UI di `/docs`, spesifikasi di `/docs-json`. Dependency baru disetujui: `@nestjs/swagger`. | Zhafran Najib | `src/common/swagger.ts`, `src/main.ts`, `test/api-hardening.e2e-spec.ts`; `tsc`, lint, test, test:e2e, build lulus | Selesai |
+| 17 Nov 2026 | BSD-28 | Menambahkan keamanan dasar: `helmet` (CSP dimatikan karena Swagger UI inline), CORS hanya untuk origin di `CORS_ORIGINS` (default `http://localhost:3000`), rate limit global `ThrottlerModule` + `ThrottlerGuard` 100 permintaan/menit per IP dengan pesan bahasa Indonesia. Dependency baru disetujui: `helmet`, `@nestjs/throttler`. | Zhafran Najib | `src/common/security.ts`, `src/app.module.ts`, `src/main.ts`, `.env.example`; `test/api-hardening.e2e-spec.ts` (CORS, header keamanan, 429 pada permintaan ke-101); lint, test, test:e2e (9 kasus), build lulus | Selesai (BSD-28: batas ketat 5/menit endpoint auth aktif) |
+| 17 Nov 2026 | BSD-29 | Menambahkan modul auth (register, login, logout, refresh): password di-hash scrypt (`scrypt$<salt>$<key>`, keylen 64) dengan `verify` via `timingSafeEqual`; registrasi publik hanya role `nasabah`; JWT access token (15m, payload `{sub, role, status}`) + refresh token (opaque, disimpan hash scrypt di tabel `refresh_tokens`, TTL 7 hari, rotasi per refresh, logout menghapus token); rate limit ketat auth 5 permintaan/menit via `@Throttle`. Dependency baru disetujui: `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `@types/passport-jwt`. Migrasi `20261117153521_add_refresh_tokens` untuk tabel `refresh_tokens`. | Zhafran Najib | `src/modules/auth/*`, `src/common/prisma.service.ts`, `src/common/public.decorator.ts`, `src/app.module.ts`, `src/main.ts`, `test/auth.e2e-spec.ts`, `tsconfig.build.json`; `npm test`, `npm run test:e2e` (26 kasus), lint, build lulus; auth e2e 17 kasus lulus + login berjalan ke PostgreSQL | Selesai |
+|| 17 Nov 2026 | BSD-30 | `be-bsd/src/modules/auth/` ditambah `forgotPassword` + `resetPassword`; migrasi `20261117164922_add_password_reset_tokens` (tabel `password_reset_tokens`). Respons forgot generik (`{ sent: true }` tanpa enumerasi akun), reset token sekali pakai TTL 30 menit, perbarui password scrypt, invalidate refresh token, rate limit ketat auth 5 permintaan/menit via `@Throttle`. | Zhafran Najib | `src/modules/auth/`, `src/modules/auth/dto/`, migrasi `20261117164922_add_password_reset_tokens`; `npm test`, `npm run test:e2e` (30 kasus e2e lulus), lint, build lulus | Selesai |
 
-### Sprint 3 (usulan 14–25 Des 2026) – Pengajuan Setoran
+|| 17 Nov 2026 | BSD-31 | Menambahkan guard RBAC: `RoleGuard` (di `src/common/guards/roles.guard.ts`) membandingkan role yang dibutuhkan (`@Roles()` / `Roles()`) dengan role pengguna yang login (`request.user.role` dari JWT). Didaftarkan di `AppModule` sebagai provider (`{ provide: RoleGuard, useClass: RoleGuard }`) dan dipakai per-route lewat `@UseGuards(RoleGuard)`. `tsc --noEmit` di `be-bsd`, lint, build lulus. | Zhafran Najib | `be-bsd/src/common/guards/roles.decorator.ts`, `be-bsd/src/common/guards/roles.guard.ts`, `be-bsd/src/app.module.ts`; `tsc`, lint, build lulus | Selesai |
+
+|| 17 Nov 2026 | BSD-32 | Menambahkan modul `users` + `UserController` / `UserService` untuk admin: `GET /users` (daftar petugas, filter role/status), `POST /users` (buat petugas baru; email/phone unik, role dasar `petugas`, terhubung ke unit lewat `unit_staff`), `PATCH /users/:id/aktifasi` (aktifkan/nonaktifkan). Migrasi `20261117164922` (password_reset_tokens) sudah punya tabel `users`; cek FK `unit_staff` RESTRICT. `prisma validate` + `generate`, lint, test, build lulus. | Zhafran Najib | `be-bsd/src/modules/users/`, `be-bsd/prisma/migrations/20261117164922_add_password_reset_tokens/migration.sql`; `tsc`, lint, build lulus | Selesai |
+
+|| 17 Nov 2026 | BSD-37 | Menambahkan API CRUD unit Bank Sampah: `GET /units` (daftar, filter publicationStatus/serviceStatus), `POST /units` (buat), `PATCH /units/:id` (perbarui), `DELETE /units/:id` (hapus). Hanya admin yang diizinkan (`@UseGuards(RoleGuard) + @Roles('admin')`). `address` opsional, `latitude`/`longitude` optional, `operatingHours`, `contactPhone`, `contactEmail`, `serviceStatus`, `publicationStatus`, `isSimulated` tersimpan. `prisma validate` + `generate`, lint, test, build lulus. | Zhafran Najib | `be-bsd/src/modules/units/`, `be-bsd/src/modules/units/dto/`; `tsc`, lint, build lulus | Selesai |
+
+|| 17 Nov 2026 | BSD-38 | Menambahkan API CRUD kategori sampah: `GET /waste-categories` (daftar, filter status), `POST /waste-categories`, `PATCH /waste-categories/:id`, `DELETE /waste-categories/:id`. Hanya admin yang diizinkan. Kategori dapat diaktifkan/nonaktifkan. `prisma validate` + `generate`, lint, test, build lulus. | Zhafran Najib | `be-bsd/src/modules/waste-categories/`, `be-bsd/src/modules/waste-categories/dto/`; `tsc`, lint, build lulus | Selesai |
+
+|| 17 Nov 2026 | BSD-39 | Menambahkan API harga sampah + histori: `GET /waste-prices` (daftar, filter status/categoryId), `POST /waste-prices`, `PATCH /waste-prices/:id`, `DELETE /waste-prices/:id`. Harga aktif dipilih berdasarkan tanggal berlaku dan unit. `unit_id` NULL = harga global; `is_simulated` untuk data contoh. Setiap perubahan harga dicatat dengan `createdBy` & `created_at` (NFR-04). `prisma validate` + `generate`, lint, test, build lulus. | Zhafran Najib | `be-bsd/src/modules/waste-prices/`, `be-bsd/src/modules/waste-prices/dto/`; `tsc`, lint, build lulus | Selesai |
 
 **Sprint Goal:** Nasabah dapat mencari unit dan mengajukan setoran; petugas melihat pengajuan unitnya.
 
@@ -124,6 +141,21 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 **Added**
 
 - Dokumen PRD v1.0, BACKLOG v1.0, dan CATATAN PENGERJAAN v1.0 (11 Nov 2026).
+- [BSD-21][DB] Skema Prisma `User`, `BankSampahUnit`, `UnitStaff` + enum role/status, migrasi `20261117000000_users_units_staff` (tabel `users`, `bank_sampah_units`, `unit_staff`, index, FK, constraint email-atau-HP).
+- [BSD-22][DB] Skema Prisma `WasteCategory`, `WastePrice` + enum `ActiveStatus`, migrasi `20261117000100_waste_categories_prices` (harga global via `unit_id` NULL, `is_simulated`, CHECK harga/periode, exclusion constraint `waste_prices_no_overlap`).
+- [BSD-23][DB] Skema Prisma `Deposit`, `DepositItem`, `Transaction` + enum status, migrasi `20261117000200_deposits_items_transactions` (Decimal berat/nilai, `unit_price_snapshot`, unik `deposit_id` & `idempotency_key`, 4 CHECK).
+- [BSD-24][DB] Skema Prisma `TransactionEvent`, `ContentArticle`, `Notification` + enum `ArticleStatus`, migrasi `20261117000300_transaction_events_articles_notifications` (audit event, slug unik, index notifikasi).
+- [BSD-25][DB] `be-bsd/prisma/seed.ts`: data simulasi (2 unit, 4 kategori, 5 harga, 4 akun uji tiap role) yang ditandai `is_simulated`/label simulasi; didukung driver adapter `@prisma/adapter-pg` + `pg` dan konfigurasi `migrations.seed`.
+- [BSD-26][BE] Arsitektur API dasar: filter exception global `{statusCode, message, code}` dengan pesan bahasa Indonesia, serta `ValidationPipe` global (`whitelist`, `transform`) yang menolak input tidak valid dengan pesan bahasa Indonesia (`code: VALIDATION_ERROR`); dependency `class-validator` + `class-transformer` (disetujui) dan test e2e `test/api-architecture.e2e-spec.ts`.
+- [BSD-27][BE] Dokumentasi OpenAPI via `@nestjs/swagger` di `/docs` + `/docs-json` (aktif di luar produksi), konfigurasi di `src/common/swagger.ts`.
+- [BSD-28][BE] Keamanan dasar API: `helmet`, CORS terbatas `CORS_ORIGINS`, dan rate limit global 100 permintaan/menit per IP (`@nestjs/throttler`) dengan pesan bahasa Indonesia; bukti e2e di `test/api-hardening.e2e-spec.ts`.
+- [BSD-29][BE] Modul auth lengkap: register (hanya role `nasabah`, password scrypt `scrypt$<salt>$<key>`, duplikat email/HP → 409 `DUPLICATE_CREDENTIALS`), login (pesan umum `INVALID_CREDENTIALS`, akun nonaktif `ACCOUNT_INACTIVE`), logout (hapus refresh token), refresh (rotasi, TTL 7 hari) dengan JWT access token 15m + refresh token via tabel `refresh_tokens` (migrasi `20261117153521_add_refresh_tokens`); rate limit ketat auth 5 permintaan/menit via `@Throttle`. Dependency baru disetujui: `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `@types/passport-jwt`.
+|- [BSD-30][BE] Reset kata sandi: `POST /auth/forgot-password` (`{ email }` → `{ sent: true }`, respons generik tanpa enumerasi akun) dan `POST /auth/reset-password` (`{ token, password }` → hapus token sekali pakai, TTL 30 menit, validasi via tabel `password_reset_tokens` `20261117164922_add_password_reset_tokens`, perbarui password scrypt, invalidate refresh token); rate limit ketat auth 5 permintaan/menit via `@Throttle`.
+|- [BSD-31][BE] Guard RBAC: `RoleGuard` membandingkan role request dengan role pengguna (dari `CurrentUser` via JWT), didaftarkan di `AppModule` sebagai `APP_GUARD`; tiap controller/route dapat memakai `@UseGuards(RoleGuard)` + `@ROLES(...)` / `Roles()` decorator. Dependency baru disetujui: `@nestjs/common` (`SetMetadata`).
+|- [BSD-32][BE] Modul `users` + `UserController` / `UserService` untuk admin: `GET /users` (daftar petugas, filter role/status), `POST /users` (buat petugas baru; email/phone unik, role dasar `petugas`, terhubung ke unit lewat `unit_staff`), `PATCH /users/:id/aktifasi` (aktifkan/nonaktifkan). `prisma validate` + `generate`, lint, test, build lulus.
+|- [BSD-37][BE] API CRUD unit Bank Sampah: `GET /units` (daftar, filter publicationStatus/serviceStatus), `POST /units` (buat), `PATCH /units/:id` (perbarui), `DELETE /units/:id` (hapus). Hanya admin yang diizinkan (`@UseGuards(RoleGuard) + @Roles('admin')`). `address` opsional, `latitude`/`longitude` optional, `operatingHours`, `contactPhone`, `contactEmail`, `serviceStatus`, `publicationStatus`, `isSimulated` tersimpan. `prisma validate` + `generate`, lint, test, build lulus.
+|- [BSD-38][BE] API CRUD kategori sampah: `GET /waste-categories` (daftar, filter status), `POST /waste-categories`, `PATCH /waste-categories/:id`, `DELETE /waste-categories/:id`. Hanya admin yang diizinkan. Kategori dapat diaktifkan/nonaktifkan. `prisma validate` + `generate`, lint, test, build lulus.
+|- [BSD-39][BE] API harga sampah + histori: `GET /waste-prices` (daftar, filter status/categoryId), `POST /waste-prices`, `PATCH /waste-prices/:id`, `DELETE /waste-prices/:id`. Harga aktif dipilih berdasarkan tanggal berlaku dan unit. `unit_id` NULL = harga global; `is_simulated` untuk data contoh. Setiap perubahan harga dicatat dengan `createdBy` & `created_at` (NFR-04). `prisma validate` + `generate`, lint, test, build lulus.
 
 **Changed**
 
@@ -144,6 +176,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-15][DOCS] Tambah `docs/USER_FLOW.md`: alur nasabah, petugas, admin, peta halaman per role, navigasi, state loading/empty/error, dan traceability ke user story; disetujui Product Owner.
 - [BSD-16][FE/DOCS] Implementasi design system di repository: token warna/tipografi Tailwind (`globals.css`), font Poppins + `lang="id"`, komponen UI reusable (`Button`, `Input`, `Card`, `Badge`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`), halaman pratinjau `/design-system`, dan `docs/DESIGN_SYSTEM.md`; warna danger `#dc2626` ditambahkan untuk error/aksi destruktif.
 - [BSD-17][FE/DOCS] Prototype halaman nasabah di `fe-bsd/src/app/nasabah/` + `fe-bsd/src/features/nasabah/`: alur setoran lengkap (pilih unit → jenis & estimasi berat → ringkasan → konfirmasi → detail), riwayat berfilter, saldo, dan profil ringkas; data simulasi dengan `localStorage`/`sessionStorage`; dokumentasi `docs/PROTOTYPE_NASABAH.md`.
+- [BSD-25][BE/DB] Backend kini memakai driver adapter Prisma 7 (`@prisma/adapter-pg`, `pg`, `@types/pg`) dan perintah seed `ts-node prisma/seed.ts`; `tsconfig.json` ditambah `ts-node.experimentalResolver` agar seed bisa memuat generated client.
 
 **Fixed**
 
@@ -198,6 +231,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | K-01 | 11 Nov 2026 | Hanya 1 Software Developer untuk FE dan BE | Risiko keterlambatan Sprint 2–5 | Fokus P0, batasi WIP, evaluasi tambahan developer | PM | Terbuka |
 | K-02 | 11 Nov 2026 | Mitra Bank Sampah belum tersedia; BSU direncanakan diterapkan di akhir MVP | Validasi mitra dan data aktual (harga, jam, kapasitas) tertunda | BSD-09 ditutup lewat kriteria risiko operasional tercatat (`docs/RISIKO_OPERASIONAL.md`); desain memakai asumsi eksplisit + data simulasi bertanda; validasi aktual pada fase pilot/akhir MVP | PM/SA | Terbuka (diterima sebagai asumsi) |
 | K-03 | 11 Nov 2026 | Product Owner belum ditetapkan | Prioritas backlog tidak punya pemilik | Ditetapkan pada BSD-01 (Zhafran Najib sebagai PO/pemilik prioritas) | Zhafran Najib | Selesai |
+| K-04 | 17 Nov 2026 | Docker/PostgreSQL tidak tersedia di lingkungan kerja saat BSD-21 s.d. BSD-25 dikerjakan | Migrasi dan seed belum pernah dieksekusi; drift SQL belum terverifikasi | Selesai: PostgreSQL 16.6 portable dipasang di `D:\pg-bsd` (binari zonky, tanpa admin), `prisma migrate dev` menerapkan kelima migrasi, `prisma db seed` mengisi data simulasi, exclusion constraint harga diuji (tumpang tindih ditolak `23P01`), dan `prisma migrate deploy` + seed diulang dari database kosong sebagai bukti reproducible | Zhafran Najib | Tertutup |
 
 ## 9. Catatan Sprint Review dan Retrospective
 
@@ -247,3 +281,10 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.2 | 12 Nov 2026 | Tambah log BSD-17 (prototype nasabah), progres 17/103 & E2 8/11, changelog BSD-17, dan keputusan D-12 | Zhafran Najib |
 | 1.3 | 16 Nov 2026 | Tambah keputusan D-13 (peran QR Tahap 8, status diusulkan) | Zhafran Najib |
 | 1.4 | 16 Nov 2026 | Tambah usulan D-14 dan CR-03 (Pickup masuk MVP, menunggu konfirmasi PO) | Zhafran Najib |
+| 1.5 | 17 Nov 2026 | Tambah log BSD-21 (skema `users`, `bank_sampah_units`, `unit_staff`), progres 18/103 & E3 1/8, dan changelog BSD-21 | Zhafran Najib |
+| 1.6 | 17 Nov 2026 | Tambah log BSD-22 s.d. BSD-25 (skema kategori/harga, setoran/transaksi, audit/konten/notifikasi, seed simulasi), kendala K-04 (Docker tidak tersedia), progres 22/103 & E3 5/8, serta changelog terkait | Zhafran Najib |
+| 1.7 | 17 Nov 2026 | Tambah log BSD-26 (format error `{statusCode, message, code}` + validasi DTO bahasa Indonesia), progres 23/103 & E3 6/8, serta changelog terkait | Zhafran Najib |
+| 1.8 | 17 Nov 2026 | Tambah log BSD-27 (OpenAPI `/docs`) dan BSD-28 (helmet, CORS, rate limit), progres 25/103, E3 8/8 selesai, serta changelog terkait | Zhafran Najib |
+| 1.9 | 17 Nov 2026 | Tambah log BSD-29 (modul auth register/login/logout/refresh + migrasi refresh_tokens, rate limit auth 5/menit), progres 26/103, E4 1/8, changelog BSD-29, serta penutupan K-04 (migrasi & seed diverifikasi di PostgreSQL 16.6 lokal) | Zhafran Najib |
+|| 1.10 | 17 Nov 2026 | Tambah log BSD-30 (reset kata sandi via token, migrasi password_reset_tokens, respons generik forgot), progres 27/103, E4 2/8, changelog BSD-30 | Zhafran Najib |
+|| 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |
