@@ -11,3 +11,344 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// BSD-21 — users, bank_sampah_units, unit_staff
+
+enum UserRole {
+  nasabah
+  petugas
+  admin
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  active
+  inactive
+  pending
+
+  @@map("user_status")
+}
+
+enum ServiceStatus {
+  open
+  closed
+  temporarily_closed
+
+  @@map("service_status")
+}
+
+enum PublicationStatus {
+  draft
+  published
+  unpublished
+
+  @@map("publication_status")
+}
+
+enum UnitStaffStatus {
+  active
+  inactive
+
+  @@map("unit_staff_status")
+}
+
+// Status aktif/nonaktif untuk data master (kategori, harga).
+enum ActiveStatus {
+  active
+  inactive
+
+  @@map("active_status")
+}
+
+model User {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String     @db.VarChar(120)
+  email        String?    @unique @db.VarChar(255)
+  phone        String?    @unique @db.VarChar(20)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  role         UserRole
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  unitStaffs UnitStaff[]
+  pricesCreated WastePrice[] @relation("WastePriceCreatedBy")
+  deposits Deposit[] @relation("DepositCustomer")
+  transactionsConfirmed Transaction[] @relation("TransactionConfirmedBy")
+  transactionsAsCustomer Transaction[] @relation("TransactionCustomer")
+  events TransactionEvent[] @relation("TransactionEventActor")
+  articles ContentArticle[] @relation("ArticleAuthor")
+  notifications Notification[]
+  refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@map("users")
+}
+
+model BankSampahUnit {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String            @db.VarChar(150)
+  address           String            @db.Text
+  latitude          Decimal?          @db.Decimal(9, 6)
+  longitude         Decimal?          @db.Decimal(9, 6)
+  operatingHours    Json?             @map("operating_hours")
+  contactPhone      String?           @map("contact_phone") @db.VarChar(20)
+  contactEmail      String?           @map("contact_email") @db.VarChar(255)
+  serviceStatus     ServiceStatus     @default(open) @map("service_status")
+  publicationStatus PublicationStatus @default(draft) @map("publication_status")
+  isSimulated       Boolean           @default(false) @map("is_simulated")
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  staffs UnitStaff[]
+  prices WastePrice[]
+  deposits Deposit[]
+  transactions Transaction[]
+
+  @@index([publicationStatus])
+  @@index([serviceStatus])
+  @@map("bank_sampah_units")
+}
+
+model UnitStaff {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  unitId    String          @map("unit_id") @db.Uuid
+  status    UnitStaffStatus @default(active)
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  unit BankSampahUnit @relation(fields: [unitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, unitId])
+  @@index([unitId, status])
+  @@index([userId, status])
+  @@map("unit_staff")
+}
+
+// BSD-22 — waste_categories, waste_prices
+
+model WasteCategory {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String       @unique @db.VarChar(100)
+  description String?      @db.Text
+  status      ActiveStatus @default(active)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  prices WastePrice[]
+  depositItems DepositItem[]
+
+  @@map("waste_categories")
+}
+
+model WastePrice {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  unitId        String?      @map("unit_id") @db.Uuid
+  categoryId    String       @map("category_id") @db.Uuid
+  pricePerKg    Decimal      @map("price_per_kg") @db.Decimal(12, 2)
+  effectiveFrom DateTime     @map("effective_from") @db.Date
+  effectiveTo   DateTime?    @map("effective_to") @db.Date
+  status        ActiveStatus @default(active)
+  isSimulated   Boolean      @default(false) @map("is_simulated")
+  createdBy     String?      @map("created_by") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  unit     BankSampahUnit? @relation(fields: [unitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category WasteCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator  User?           @relation("WastePriceCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([categoryId, effectiveFrom(sort: Desc)])
+  @@index([unitId, categoryId, effectiveFrom(sort: Desc)])
+  @@map("waste_prices")
+}
+
+// BSD-23 — deposits, deposit_items, transactions
+
+enum DepositStatus {
+  menunggu
+  diproses
+  selesai
+  dibatalkan
+
+  @@map("deposit_status")
+}
+
+enum InspectionStatus {
+  pending
+  accepted
+  rejected
+
+  @@map("inspection_status")
+}
+
+enum TransactionStatus {
+  active
+  cancelled
+  corrected
+
+  @@map("transaction_status")
+}
+
+model Deposit {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId         String        @map("customer_id") @db.Uuid
+  unitId             String        @map("unit_id") @db.Uuid
+  status             DepositStatus @default(menunggu)
+  submittedAt        DateTime      @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  processedAt        DateTime?     @map("processed_at") @db.Timestamptz(6)
+  completedAt        DateTime?     @map("completed_at") @db.Timestamptz(6)
+  cancelledAt        DateTime?     @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?       @map("cancellation_reason") @db.Text
+  notes              String?       @db.Text
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer    User         @relation("DepositCustomer", fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  unit        BankSampahUnit @relation(fields: [unitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items       DepositItem[]
+  transaction Transaction?
+  events      TransactionEvent[]
+
+  @@index([customerId, submittedAt(sort: Desc)])
+  @@index([unitId, status, submittedAt])
+  @@map("deposits")
+}
+
+model DepositItem {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  depositId        String           @map("deposit_id") @db.Uuid
+  categoryId       String           @map("category_id") @db.Uuid
+  estimatedWeight  Decimal          @map("estimated_weight") @db.Decimal(10, 3)
+  actualWeight     Decimal?         @map("actual_weight") @db.Decimal(10, 3)
+  unitPriceSnapshot Decimal?        @map("unit_price_snapshot") @db.Decimal(12, 2)
+  lineTotal        Decimal?         @map("line_total") @db.Decimal(14, 2)
+  inspectionStatus InspectionStatus @default(pending) @map("inspection_status")
+  rejectionReason  String?          @map("rejection_reason") @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  deposit  Deposit       @relation(fields: [depositId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category WasteCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([depositId, categoryId])
+  @@index([depositId])
+  @@map("deposit_items")
+}
+
+model Transaction {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  depositId      String            @unique @map("deposit_id") @db.Uuid
+  customerId     String            @map("customer_id") @db.Uuid
+  unitId         String            @map("unit_id") @db.Uuid
+  totalWeight    Decimal           @map("total_weight") @db.Decimal(12, 3)
+  totalValue     Decimal           @map("total_value") @db.Decimal(14, 2)
+  confirmedBy    String            @map("confirmed_by") @db.Uuid
+  confirmedAt    DateTime          @default(now()) @map("confirmed_at") @db.Timestamptz(6)
+  idempotencyKey String?           @unique @map("idempotency_key") @db.VarChar(100)
+  status         TransactionStatus @default(active)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  deposit   Deposit        @relation(fields: [depositId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  customer  User           @relation("TransactionCustomer", fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  unit      BankSampahUnit @relation(fields: [unitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  confirmedByUser User     @relation("TransactionConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  events    TransactionEvent[]
+
+  @@index([customerId, confirmedAt(sort: Desc)])
+  @@index([unitId, confirmedAt(sort: Desc)])
+  @@map("transactions")
+}
+
+// BSD-24 — transaction_events, content_articles, notifications
+
+enum ArticleStatus {
+  draft
+  published
+  archived
+
+  @@map("article_status")
+}
+
+model TransactionEvent {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  depositId     String?  @map("deposit_id") @db.Uuid
+  transactionId String?  @map("transaction_id") @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(40)
+  oldStatus     String?  @map("old_status") @db.VarChar(30)
+  newStatus     String?  @map("new_status") @db.VarChar(30)
+  actorId       String   @map("actor_id") @db.Uuid
+  reason        String?  @db.Text
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  deposit     Deposit?     @relation(fields: [depositId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  actor       User         @relation("TransactionEventActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([depositId, createdAt(sort: Desc)])
+  @@index([transactionId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@map("transaction_events")
+}
+
+model ContentArticle {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String        @db.VarChar(200)
+  slug        String        @unique @db.VarChar(200)
+  body        String        @db.Text
+  authorId    String        @map("author_id") @db.Uuid
+  status      ArticleStatus @default(draft)
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  author User @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@map("content_articles")
+}
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String    @db.VarChar(150)
+  message   String    @db.Text
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model RefreshToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, expiresAt(sort: Desc)])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, expiresAt(sort: Desc)])
+  @@map("password_reset_tokens")
+}

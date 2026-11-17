@@ -83,6 +83,7 @@ export function LoginForm() {
       <div
         role="group"
         aria-label="Masuk sebagai"
+        suppressHydrationWarning
         className="mt-[13px] flex h-[50px] w-[350px] max-w-full items-center gap-[18px] px-[9px] py-[6px]"
       >
         {personas.map((item) => {

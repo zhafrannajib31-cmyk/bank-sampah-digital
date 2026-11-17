@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.io", "*.ngrok.app"],
   cacheComponents: true,
   partialPrefetching: true,
   // Gambar statis di public/ tidak ber-hash: cache 1 hari + revalidate di latar (shortcut: ganti nama berkas

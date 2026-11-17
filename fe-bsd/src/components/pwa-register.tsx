@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 
-/** Mendaftarkan service worker (hanya production agar tidak mengganggu dev server). */
+/** Mendaftarkan service worker (production + dev via ngrok untuk testing PWA). */
 export function PwaRegister() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Gagal mendaftar tidak boleh mengganggu pemakaian aplikasi.
     });

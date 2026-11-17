@@ -19,5 +19,8 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false
+  },
+  "ts-node": {
+    "experimentalResolver": true
   }
 }

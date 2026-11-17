@@ -1,7 +1,17 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HttpExceptionFilter } from './common/http-exception.filter';
+import { appValidationPipe } from './common/validation';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/users/user.module';
+import { UnitModule } from './modules/units/units.module';
+import { WasteCategoryModule } from './modules/waste-categories/waste-categories.module';
+import { WastePriceModule } from './modules/waste-prices/waste-prices.module';
+import { RoleGuard } from './common/guards/roles.guard';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -15,8 +25,23 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
       serviceId: 'be-bsd',
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 100 }],
+      errorMessage: 'Terlalu banyak permintaan, coba lagi nanti.',
+    }),
+    AuthModule,
+    UserModule,
+    UnitModule,
+    WasteCategoryModule,
+    WastePriceModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_PIPE, useValue: appValidationPipe },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: RoleGuard, useClass: RoleGuard },
+  ],
 })
 export class AppModule {}
