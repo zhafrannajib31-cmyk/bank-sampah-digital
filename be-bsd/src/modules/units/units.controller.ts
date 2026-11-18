@@ -11,7 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
 import { UnitService } from './units.service';
@@ -24,12 +24,11 @@ export class UnitController {
   constructor(private readonly unitService: UnitService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Daftar unit Bank Sampah (admin)' })
+  @ApiOperation({ summary: 'Daftar unit Bank Sampah (semua role login)' })
   @ApiResponse({ status: 200, description: 'Daftar unit' })
   @ApiResponse({ status: 401, description: 'Belum login' })
-  @ApiResponse({ status: 403, description: 'Akses ditolak: role admin diperlukan' })
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'petugas', 'nasabah')
   async findAll(
     @Query('search') search?: string,
     @Query('area') area?: string,

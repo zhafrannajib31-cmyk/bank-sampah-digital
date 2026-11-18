@@ -12,8 +12,11 @@ import { UnitModule } from './modules/units/units.module';
 import { WasteCategoryModule } from './modules/waste-categories/waste-categories.module';
 import { WastePriceModule } from './modules/waste-prices/waste-prices.module';
 import { DepositModule } from './modules/deposits/deposit.module';
+import { TransactionModule } from './modules/transactions/transaction.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RoleGuard } from './common/guards/roles.guard';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { CommonModule } from './common/common.module';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -31,12 +34,14 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       throttlers: [{ name: 'default', ttl: 60_000, limit: 100 }],
       errorMessage: 'Terlalu banyak permintaan, coba lagi nanti.',
     }),
+    CommonModule,
     AuthModule,
     UserModule,
     UnitModule,
     WasteCategoryModule,
     WastePriceModule,
     DepositModule,
+    TransactionModule,
     ReportsModule,
   ],
   controllers: [AppController],
@@ -45,6 +50,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     { provide: APP_PIPE, useValue: appValidationPipe },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: RoleGuard, useClass: RoleGuard },
   ],
 })

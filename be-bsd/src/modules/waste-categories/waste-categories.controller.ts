@@ -11,7 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
 import { WasteCategoryService } from './waste-categories.service';
@@ -24,10 +24,10 @@ export class WasteCategoryController {
   constructor(private readonly categoryService: WasteCategoryService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Daftar kategori sampah' })
+  @ApiOperation({ summary: 'Daftar kategori sampah (semua role login)' })
   @ApiResponse({ status: 200, description: 'Daftar kategori' })
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'petugas', 'nasabah')
   async findAll(@Query('status') status?: string) {
     return this.categoryService.findAll(status);
   }
@@ -37,7 +37,7 @@ export class WasteCategoryController {
   @ApiResponse({ status: 200, description: 'Detail kategori' })
   @ApiResponse({ status: 404, description: 'Kategori tidak ditemukan' })
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'petugas', 'nasabah')
   async findOne(@Param('id') id: string) {
     return this.categoryService.findOne(id);
   }

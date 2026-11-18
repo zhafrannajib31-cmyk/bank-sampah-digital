@@ -3,6 +3,7 @@ import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
+import { CurrentUser } from '../auth/guards/current-user.decorator';
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -17,7 +18,8 @@ export class ReportsController {
   @Roles('petugas')
   async getDailySummary(
     @Param('unitId', ParseUUIDPipe) unitId: string,
+    @CurrentUser('sub') userId: string,
   ) {
-    return this.reportsService.getDailySummary(unitId);
+    return this.reportsService.getDailySummary(unitId, userId);
   }
 }

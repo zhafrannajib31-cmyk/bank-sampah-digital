@@ -410,14 +410,16 @@ Selesai kalau:
 
 Catatan penyelesaian (17 Nov 2026): modul auth ditambah `forgotPassword` + `resetPassword`; migrasi `20261117164922_add_password_reset_tokens` (tabel `password_reset_tokens`). Bukti: `test/auth.e2e-spec.ts` (30 kasus e2e lulus), lint, build lulus.
 
-## [/] BSD-31 · RBAC dan guard endpoint
+## [x] BSD-31 · RBAC dan guard endpoint
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-29
 
 Boleh sentuh: `be-bsd/src/modules/auth/`, `be-bsd/src/common/guards/`
 
 Selesai kalau:
-- [ ] Role nasabah, petugas, admin dicek di server pada tiap endpoint
-- [ ] Akun petugas/admin tidak bisa diperoleh lewat registrasi (NFR-01)
+- [x] Role nasabah, petugas, admin dicek di server pada tiap endpoint
+- [x] Akun petugas/admin tidak bisa diperoleh lewat registrasi (NFR-01)
+
+Catatan penyelesaian (18 Nov 2026): `JwtAuthGuard` dipasang global (`APP_GUARD`) dan endpoint publik ditandai `@Public()`; `CommonModule`/`PrismaModule` global menyediakan `PrismaService` + `UnitAccessService` (`assertStaffOfUnit`, `assertDepositOwner`, `assertTransactionOwner`) untuk cek keanggotaan unit dan kepemilikan data di service. Identitas diambil dari token, bukan query. Baca data master (units/kategori/harga) terbuka untuk semua role login, tulis tetap admin. `TransactionModule` didaftarkan (route `/transactions` sebelumnya 404). Sekalian diperbaiki: DTO pengajuan pakai `@IsUUID` + pola berat desimal, snapshot harga per `categoryId` dalam pengajuan (sebelumnya 500), berat hanya item milik pengajuan, konfirmasi idempoten mengembalikan transaksi yang sama saat retry. Bukti: e2e 30/30 lulus, build/lint lulus, verifikasi manual RBAC + alur transaksi penuh ke server lokal (2 akun petugas beda unit).
 
 ## [/] BSD-32 · Admin mengelola akun petugas
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-31

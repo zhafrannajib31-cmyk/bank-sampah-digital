@@ -2,10 +2,14 @@ import { Injectable, NotFoundException, ForbiddenException, ConflictException, B
 import { PrismaService } from '../../common/prisma.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { Decimal } from '@prisma/client-runtime-utils';
+import { UnitAccessService } from '../../common/services/unit-access.service';
 
 @Injectable()
 export class DepositService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly unitAccess: UnitAccessService,
+  ) {}
 
   async create(dto: CreateDepositDto, customerId: string) {
     const unit = await this.prisma.bankSampahUnit.findUnique({
@@ -93,6 +97,10 @@ export class DepositService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan dengan status Menunggu yang bisa dibatalkan.' });
     }
 
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan pembatalan wajib diisi.' });
+    }
+
     const cancelled = await this.prisma.deposit.update({
       where: { id },
       data: {
@@ -113,7 +121,12 @@ export class DepositService {
       },
     });
 
-    return this.mapDeposit(cancelled);
+    // Re-fetch with items for mapping
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id: cancelled.id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   // E8: cancellation after confirmation (BSD-62)
@@ -159,7 +172,11 @@ export class DepositService {
       },
     });
 
-    return this.mapDeposit(cancelled);
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id: cancelled.id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   // E8: correction after confirmation (BSD-62)
@@ -205,11 +222,15 @@ export class DepositService {
       },
     });
 
-    return this.mapDeposit(deposit);
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id: deposit.id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   // E8: calculate total value for confirmed deposit (BSD-60)
-  async calculateConfirmedValue(id: string, petugasId: string) {
+  async calculateConfirmedValue(id: string, _petugasId: string) {
     const deposit = await this.prisma.deposit.findUnique({
       where: { id },
       include: {
@@ -259,6 +280,9 @@ export class DepositService {
     if (deposit.status !== 'menunggu') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Menunggu yang bisa diproses.' });
     }
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+
     const updated = await this.prisma.deposit.update({
       where: { id },
       data: {
@@ -275,7 +299,12 @@ export class DepositService {
         actorId: petugasId,
       },
     });
-    return this.mapDeposit(updated);
+    // Re-fetch with items
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id: updated.id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   async updateWeight(id: string, petugasId: string, items: { itemId: string; actualWeight: string }[]) {
@@ -288,16 +317,19 @@ export class DepositService {
     if (deposit.status !== 'diproses') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa input berat.' });
     }
-    // Update each item individually
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+
+    // Item harus milik pengajuan ini (cegah ubah item pengajuan lain)
     for (const item of items) {
-      const updated = await this.prisma.depositItem.update({
-        where: { id: item.itemId },
+      const { count } = await this.prisma.depositItem.updateMany({
+        where: { id: item.itemId, depositId: id },
         data: {
           actualWeight: new Decimal(item.actualWeight),
         },
       });
-      if (!updated) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${item.itemId} tidak ditemukan.` });
+      if (count === 0) {
+        throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${item.itemId} tidak ditemukan di pengajuan ini.` });
       }
     }
     // Record event
@@ -311,7 +343,12 @@ export class DepositService {
         metadata: { actualWeights: items },
       },
     });
-    return this.mapDeposit(deposit);
+    // Re-fetch with items
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   async snapshotPrice(id: string, petugasId: string, snapshootData: { categoryId: string; unitPriceSnapshot: string }[]) {
@@ -324,16 +361,19 @@ export class DepositService {
     if (deposit.status !== 'diproses') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa snapshot harga.' });
     }
-    // Update each item individually
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+
+    // Item dicari per kategori di dalam pengajuan ini, bukan per id item
     for (const snapshoot of snapshootData) {
-      const updated = await this.prisma.depositItem.update({
-        where: { id: snapshoot.categoryId },
+      const { count } = await this.prisma.depositItem.updateMany({
+        where: { depositId: id, categoryId: snapshoot.categoryId },
         data: {
           unitPriceSnapshot: new Decimal(snapshoot.unitPriceSnapshot),
         },
       });
-      if (!updated) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${snapshoot.categoryId} tidak ditemukan.` });
+      if (count === 0) {
+        throw new NotFoundException({ code: 'NOT_FOUND', message: `Kategori ${snapshoot.categoryId} tidak ada di pengajuan ini.` });
       }
     }
     await this.prisma.transactionEvent.create({
@@ -346,7 +386,12 @@ export class DepositService {
         metadata: { snapshootData },
       },
     });
-    return this.mapDeposit(deposit);
+    // Re-fetch with items
+    const withItems = await this.prisma.deposit.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    return this.mapDeposit(withItems!);
   }
 
   async calculateValue(id: string, petugasId: string) {
@@ -366,6 +411,9 @@ export class DepositService {
     if (deposit.status !== 'diproses') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa kalkulasi nilai.' });
     }
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+
     const items = deposit.items;
     let totalWeight = new Decimal(0);
     let totalValue = new Decimal(0);
@@ -389,12 +437,6 @@ export class DepositService {
   }
 
   async confirmTransaction(id: string, petugasId: string, idempotencyKey: string) {
-    const existing = await this.prisma.transaction.findUnique({
-      where: { idempotencyKey },
-    });
-    if (existing) {
-      throw new ConflictException({ code: 'DUPLICATE', message: 'Transaksi sudah pernah dikonfirmasi dengan key ini.' });
-    }
     const deposit = await this.prisma.deposit.findUnique({
       where: { id },
       include: {
@@ -408,9 +450,28 @@ export class DepositService {
     if (!deposit) {
       throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
     }
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+
+    // Idempotent: retry dengan key yang sama mengembalikan transaksi yang sudah ada.
+    // Dicek sebelum validasi status supaya retry setelah sukses tidak ditolak.
+    const existing = await this.prisma.transaction.findUnique({
+      where: { idempotencyKey },
+      include: {
+        deposit: { include: { items: true } },
+      },
+    });
+    if (existing) {
+      if (existing.depositId !== deposit.id) {
+        throw new ConflictException({ code: 'DUPLICATE', message: 'Kunci idempotensi sudah dipakai pengajuan lain.' });
+      }
+      return this.mapTransaction(existing);
+    }
+
     if (deposit.status !== 'diproses') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa dikonfirmasi.' });
     }
+
     let totalWeight = new Decimal(0);
     let totalValue = new Decimal(0);
     for (const item of deposit.items) {
@@ -428,7 +489,7 @@ export class DepositService {
           totalWeight,
           totalValue,
           confirmedBy: petugasId,
-          status: 'corrected',
+          status: 'active',
           idempotencyKey,
         },
       });
@@ -459,7 +520,7 @@ export class DepositService {
       cancelledAt: deposit.cancelledAt,
       cancellationReason: deposit.cancellationReason,
       notes: deposit.notes,
-      items: deposit.items.map((item: any) => ({
+      items: (deposit.items ?? []).map((item: any) => ({
         id: item.id,
         categoryId: item.categoryId,
         categoryName: item.category?.name,

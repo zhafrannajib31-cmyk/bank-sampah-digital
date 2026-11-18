@@ -11,7 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
 import { WastePriceService } from './waste-prices.service';
@@ -24,12 +24,11 @@ export class WastePriceController {
   constructor(private readonly priceService: WastePriceService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Daftar harga sampah (admin)' })
+  @ApiOperation({ summary: 'Daftar harga sampah (semua role login)' })
   @ApiResponse({ status: 200, description: 'Daftar harga' })
   @ApiResponse({ status: 401, description: 'Belum login' })
-  @ApiResponse({ status: 403, description: 'Akses ditolak: role admin diperlukan' })
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'petugas', 'nasabah')
   async findAll(@Query('status') status?: string, @Query('categoryId') categoryId?: string) {
     return this.priceService.findAll(status, categoryId);
   }
@@ -39,7 +38,7 @@ export class WastePriceController {
   @ApiResponse({ status: 200, description: 'Detail harga' })
   @ApiResponse({ status: 404, description: 'Harga tidak ditemukan' })
   @UseGuards(RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'petugas', 'nasabah')
   async findOne(@Param('id') id: string) {
     return this.priceService.findOne(id);
   }

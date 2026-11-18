@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { UnitAccessService } from '../../common/services/unit-access.service';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly unitAccess: UnitAccessService,
+  ) {}
 
   /**
    * Ringkasan dashboard untuk petugas: jumlah pengajuan dan transaksi harian
    * untuk unit yang ditugaskan.
    * Endpoint: GET /reports/petugas/:unitId
    */
-  async getDailySummary(unitId: string, limit = 7) {
+  async getDailySummary(unitId: string, userId: string, limit = 7) {
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(userId, unitId);
+
     const today = new Date();
     const days = [];
 

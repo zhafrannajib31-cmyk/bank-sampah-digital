@@ -17,6 +17,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './guards/current-user.decorator';
+import { Public } from '../../common/public.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,6 +25,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Registrasi nasabah baru (hanya role nasabah)' })
   @ApiResponse({ status: 201, description: 'Akun dibuat, token dikembalikan' })
@@ -34,6 +36,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login nasabah/petugas/admin' })
@@ -56,6 +59,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Memperbarui access token dengan refresh token' })
@@ -67,6 +71,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Minta reset kata sandi (respons tidak membocorkan status akun)' })
@@ -77,6 +82,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset kata sandi pakai token dari forgot-password (sekali pakai, kadaluarsa)' })

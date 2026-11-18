@@ -1,20 +1,19 @@
-import { Controller, Get, Query, Param, ParseUUIDPipe, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Query, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
+import { CurrentUser } from '../auth/guards/current-user.decorator';
 
 @Controller('transactions')
 @UseGuards(JwtAuthGuard, RoleGuard)
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
+  /** Nasabah: riwayat transaksi milik sendiri (dari token, bukan query). */
   @Get()
   @Roles('nasabah')
-  async getTransactions(@Query('customerId') customerId: string) {
-    if (!customerId) {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Customer ID diperlukan.' });
-    }
+  async getTransactions(@CurrentUser('sub') customerId: string) {
     return this.transactionService.getTransactions(customerId);
   }
 
@@ -23,20 +22,18 @@ export class TransactionController {
   @Roles('petugas')
   async getTransactionsByUnit(
     @Query('unitId', ParseUUIDPipe) unitId: string,
-    @Query('userId', ParseUUIDPipe) userId: string,
+    @CurrentUser('sub') userId: string,
   ) {
     return this.transactionService.getTransactionsByUnit(unitId, userId);
   }
 
+  /** Nasabah: detail transaksi milik sendiri (dari token, bukan query). */
   @Get(':id')
   @Roles('nasabah')
   async getTransactionDetail(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('customerId') customerId: string,
+    @CurrentUser('sub') customerId: string,
   ) {
-    if (!customerId) {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Customer ID diperlukan.' });
-    }
     return this.transactionService.getTransactionDetail(id, customerId);
   }
 }

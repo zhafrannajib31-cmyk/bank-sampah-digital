@@ -4,6 +4,7 @@ import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { Public } from './../src/common/public.decorator';
 
 class ProbeDto {
   @IsString({ message: 'nama harus berupa teks.' })
@@ -16,6 +17,7 @@ class ProbeDto {
 @Controller('probe')
 class ProbeController {
   @Post()
+  @Public()
   create(@Body() body: ProbeDto): ProbeDto {
     return body;
   }

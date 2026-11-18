@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { UnitAccessService } from '../../common/services/unit-access.service';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly unitAccess: UnitAccessService,
+  ) {}
 
   async getTransactions(customerId: string) {
     const transactions = await this.prisma.transaction.findMany({
@@ -51,6 +55,9 @@ export class TransactionService {
 
   /** Petugas: ambil transaksi untuk unit yang ditugaskan (BSD-69). */
   async getTransactionsByUnit(unitId: string, userId: string) {
+    // Unit membership check
+    await this.unitAccess.assertStaffOfUnit(userId, unitId);
+
     const transactions = await this.prisma.transaction.findMany({
       where: { unitId, status: 'active' },
       orderBy: { confirmedAt: 'desc' },
