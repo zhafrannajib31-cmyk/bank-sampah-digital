@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 import { Asset, EmptyState, StepHeader, buttonClasses } from "@/components/ui";
 import { formatDate, formatRupiah, formatWeight } from "@/features/nasabah/format";
 import { usePrototype } from "@/features/nasabah/prototype-store";
@@ -10,6 +11,15 @@ import type { Deposit } from "@/features/nasabah/types";
 
 /** Detail transaksi bukti setoran nasabah. */
 export default function TransaksiDetailPage() {
+  // useParams butuh Suspense agar halaman bisa diprerender saat build.
+  return (
+    <Suspense fallback={null}>
+      <TransaksiDetail />
+    </Suspense>
+  );
+}
+
+function TransaksiDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { deposits } = usePrototype();
