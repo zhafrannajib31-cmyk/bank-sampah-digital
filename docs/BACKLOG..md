@@ -725,14 +725,14 @@ Selesai kalau:
 - [ ] Detail pengajuan, input berat, dan ringkasan sebelum konfirmasi tersedia
 - [ ] Nilai ditampilkan dari respons API, bukan dihitung di FE
 
-## [ ] BSD-64 · Penanganan jaringan buruk
+## [x] BSD-64 · Penanganan jaringan buruk
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-63
 
-Boleh sentuh: `fe-bsd/src/lib/api/`, `fe-bsd/src/components/`
+- Tombol dinonaktifkan saat proses, idempotency key dikirim
+- Retry aman dan pesan error jelas saat jaringan putus (TC-09)
 
-Selesai kalau:
-- [ ] Tombol dinonaktifkan saat proses, idempotency key dikirim
-- [ ] Retry aman dan pesan error jelas saat jaringan putus (TC-09)
+---
+
 
 ---
 
