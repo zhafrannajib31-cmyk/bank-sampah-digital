@@ -7,6 +7,8 @@ import {
   Patch,
   UseGuards,
   Req,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/roles.guard';
@@ -69,5 +71,100 @@ export class DepositController {
       throw new Error('Customer ID not found in token');
     }
     return this.depositService.cancelDeposit(id, customerId, body.reason);
+  }
+
+  // E8: petugas endpoints
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update status (petugas, Menunggu -> Diproses)' })
+  @ApiResponse({ status: 200, description: 'Status diupdate' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak: role petugas diperlukan' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async updateStatus(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.updateStatus(id, petugasId, 'diproses');
+  }
+
+  @Patch(':id/weight')
+  @ApiOperation({ summary: 'Input berat aktual (petugas)' })
+  @ApiResponse({ status: 200, description: 'Berat diupdate' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async updateWeight(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { items: { itemId: string; actualWeight: string }[] },
+  ) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.updateWeight(id, petugasId, body.items);
+  }
+
+  @Patch(':id/snapshoot')
+  @ApiOperation({ summary: 'Snapshot harga (petugas)' })
+  @ApiResponse({ status: 200, description: 'Harga di-snapshot' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async snapshotPrice(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { items: { categoryId: string; unitPriceSnapshot: string }[] },
+  ) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.snapshotPrice(id, petugasId, body.items);
+  }
+
+  @Post(':id/value')
+  @ApiOperation({ summary: 'Hitung nilai (petugas)' })
+  @ApiResponse({ status: 200, description: 'Nilai dihitung' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async calculateValue(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.calculateValue(id, petugasId);
+  }
+
+  @Post(':id/confirm')
+  @ApiOperation({ summary: 'Konfirmasi transaksi (petugas, atomik+idempotent)' })
+  @ApiResponse({ status: 200, description: 'Transaksi dikonfirmasi' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async confirm(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { idempotencyKey: string },
+  ) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.confirmTransaction(id, petugasId, body.idempotencyKey);
   }
 }
