@@ -51,10 +51,10 @@ export default function TimbangSampahPage() {
     const text = typed[item.categoryId] ?? toText(item.actualWeight ?? item.estimatedWeight);
     const weight = parseWeight(text);
     const valid = Number.isFinite(weight) && weight > 0;
-    // Simulasi sisi server (prototype); di aplikasi nyata nilai datang dari respons API.
-    return { item, price, text, weight, valid, value: valid ? Math.round(weight * price) : 0 };
+    // Nilai dari server (finalValue), bukan dihitung di FE.
+    return { item, price, text, weight, valid, value: item.finalValue };
   });
-  const total = rows.reduce((sum, row) => sum + row.value, 0);
+  const total = rows.reduce((sum, row) => sum + (row.value ?? 0), 0);
   const totalWeight = rows.reduce((sum, row) => sum + (row.valid ? row.weight : 0), 0);
 
   function save() {
@@ -110,7 +110,7 @@ export default function TimbangSampahPage() {
               }
             />
             <p className="self-end text-[12px] leading-[16.5px] font-medium tracking-[-0.275px] text-green-dark-active">
-              Subtotal: {formatRupiah(value)}
+              Subtotal: {formatRupiah(value ?? 0)}
             </p>
           </li>
         ))}
