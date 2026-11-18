@@ -1,8 +1,8 @@
 import { ApiError, registerMockRoutes } from "@/lib/api";
-import { SESSION_COOKIE, type Role } from "@/lib/auth";
+import type { AuthResponse } from "./api";
 
 /**
- * Backend simulasi untuk Login/Register/Lupa Kata Sandi sampai be-bsd (BSD-29/30) tersedia.
+ * Backend simulasi untuk Login/Register/Lupa Kata Sandi.
  * Hanya dipakai saat NEXT_PUBLIC_API_URL kosong. Akun di bawah adalah DATA SIMULASI.
  */
 export const MOCK_ACCOUNTS = [
@@ -20,14 +20,23 @@ const passwordOf = (account: { email: string; password: string }) =>
   changedPasswords.get(account.email) ?? account.password;
 
 const sessionRole = () =>
-  document.cookie.match(new RegExp(`(?:^|; )${SESSION_COOKIE}=([^;]+)`))?.[1];
-
-function startSession(role: Role) {
-  document.cookie = `${SESSION_COOKIE}=${role}; path=/; max-age=28800; samesite=lax`;
-  return { role };
-}
+  document.cookie.match(/(?:^|; )bsd_session=([^;]+)/)?.[1];
 
 const delay = () => new Promise((resolve) => setTimeout(resolve, 400));
+
+/** Bentuk respons sama dengan be-bsd: { user, accessToken, refreshToken, expiresIn }. */
+function startSession(user: {
+  name: string;
+  email: string;
+  role: AuthResponse["user"]["role"];
+}): AuthResponse {
+  return {
+    user: { id: `mock-${user.role}`, name: user.name, email: user.email, role: user.role, status: "active" },
+    accessToken: "mock-access-token",
+    refreshToken: "mock-refresh-token",
+    expiresIn: 28800,
+  };
+}
 
 registerMockRoutes({
   "POST /auth/login": async ({ body }) => {
@@ -46,17 +55,18 @@ registerMockRoutes({
         "Akun Anda dinonaktifkan. Hubungi admin Bank Sampah.",
       );
     }
-    return startSession(account.role);
+    return startSession({ name: account.email.split("@")[0], email: account.email, role: account.role });
   },
 
   "POST /auth/register": async ({ body }) => {
     await delay();
-    const email = (body as { email: string }).email.trim().toLowerCase();
+    const input = body as { name: string; email: string };
+    const email = input.email.trim().toLowerCase();
     if (registered.has(email) || MOCK_ACCOUNTS.some((item) => item.email === email)) {
       throw new ApiError(409, "EMAIL_TAKEN", "Email ini sudah terdaftar. Silakan masuk.");
     }
     registered.add(email);
-    return startSession("nasabah");
+    return startSession({ name: input.name, email, role: "nasabah" });
   },
 
   "POST /auth/forgot-password": async () => {
@@ -80,8 +90,5 @@ registerMockRoutes({
     return { changed: true };
   },
 
-  "POST /auth/logout": async () => {
-    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
-    return null;
-  },
+  "POST /auth/logout": async () => null,
 });

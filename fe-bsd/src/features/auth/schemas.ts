@@ -38,12 +38,20 @@ const personName = z.string().trim().min(1, "Nama lengkap wajib diisi.");
 
 export const profileSchema = z.object({ name: personName, whatsapp });
 
+const strongPassword = z
+  .string()
+  .min(8, "Kata sandi minimal 8 karakter.")
+  .regex(/[A-Z]/, "Kata sandi harus mengandung huruf besar.")
+  .regex(/[a-z]/, "Kata sandi harus mengandung huruf kecil.")
+  .regex(/[0-9]/, "Kata sandi harus mengandung angka.")
+  .regex(/[^A-Za-z0-9]/, "Kata sandi harus mengandung simbol.");
+
 export const registerSchema = z
   .object({
     name: personName,
     email,
     whatsapp,
-    password: z.string().min(8, "Kata sandi minimal 8 karakter."),
+    password: strongPassword,
     confirmPassword: z.string(),
     acceptedTerms: z.literal(true, "Anda perlu menyetujui Syarat & Ketentuan."),
   })

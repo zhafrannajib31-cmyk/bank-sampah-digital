@@ -48,8 +48,8 @@ export function RegisterForm() {
 
     try {
       const { name, email, whatsapp, password } = parsed.data;
-      const { role } = await register({ name, email, whatsapp, password });
-      router.replace(postLoginPath(undefined, role));
+      const { user } = await register({ name, email, phone: whatsapp, password });
+      router.replace(postLoginPath(undefined, user.role));
     } catch (error) {
       setFormError(userMessage(error));
       setIsLoading(false);

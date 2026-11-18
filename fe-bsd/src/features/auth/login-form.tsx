@@ -60,8 +60,8 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const { role } = await login(parsed.data);
-      router.replace(postLoginPath(next, role));
+      const { user } = await login(parsed.data);
+      router.replace(postLoginPath(next, user.role));
     } catch (error) {
       setFormError(userMessage(error));
       setIsLoading(false);
