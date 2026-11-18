@@ -12,6 +12,7 @@ import { UnitModule } from './modules/units/units.module';
 import { WasteCategoryModule } from './modules/waste-categories/waste-categories.module';
 import { WastePriceModule } from './modules/waste-prices/waste-prices.module';
 import { DepositModule } from './modules/deposits/deposit.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { RoleGuard } from './common/guards/roles.guard';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -36,6 +37,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     WasteCategoryModule,
     WastePriceModule,
     DepositModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
