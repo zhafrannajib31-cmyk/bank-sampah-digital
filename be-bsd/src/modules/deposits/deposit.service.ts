@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { Decimal } from '@prisma/client-runtime-utils';
@@ -102,7 +102,151 @@ export class DepositService {
       },
     });
 
+    // Record event for cancellation
+    await this.prisma.transactionEvent.create({
+      data: {
+        depositId: cancelled.id,
+        eventType: 'CANCELLED',
+        oldStatus: 'menunggu',
+        newStatus: 'dibatalkan',
+        actorId: customerId,
+      },
+    });
+
     return this.mapDeposit(cancelled);
+  }
+
+  // E8: cancellation after confirmation (BSD-62)
+  async cancelConfirmed(id: string, customerId: string, reason: string) {
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id },
+    });
+
+    if (!deposit) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
+    }
+
+    if (deposit.customerId !== customerId) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Anda tidak boleh membatalkan data ini.' });
+    }
+
+    if (deposit.status !== 'selesai') {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Selesai yang bisa dibatalkan setelah konfirmasi.' });
+    }
+
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan pembatalan wajib diisi.' });
+    }
+
+    const cancelled = await this.prisma.deposit.update({
+      where: { id },
+      data: {
+        status: 'dibatalkan',
+        cancelledAt: new Date(),
+        cancellationReason: reason,
+      },
+    });
+
+    // Record event for cancellation after confirmation
+    await this.prisma.transactionEvent.create({
+      data: {
+        depositId: cancelled.id,
+        eventType: 'CANCELLED_AFTER_CONFIRMATION',
+        oldStatus: 'selesai',
+        newStatus: 'dibatalkan',
+        actorId: customerId,
+        metadata: { reason },
+      },
+    });
+
+    return this.mapDeposit(cancelled);
+  }
+
+  // E8: correction after confirmation (BSD-62)
+  async correctAfterConfirmation(id: string, customerId: string, items: { categoryId: string; actualWeight?: string }[]) {
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id },
+    });
+
+    if (!deposit) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
+    }
+
+    if (deposit.customerId !== customerId) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Anda tidak boleh mengkoreksi data ini.' });
+    }
+
+    if (deposit.status !== 'selesai') {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Selesai yang bisa dikoreksi setelah konfirmasi.' });
+    }
+
+    // Update items with actual weight
+    for (const item of items) {
+      const updated = await this.prisma.depositItem.update({
+        where: { id: item.categoryId },
+        data: {
+          actualWeight: item.actualWeight ? new Decimal(item.actualWeight) : { set: new Decimal(0) },
+        },
+      });
+      if (!updated) {
+        throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${item.categoryId} tidak ditemukan.` });
+      }
+    }
+
+    // Record event for correction
+    await this.prisma.transactionEvent.create({
+      data: {
+        depositId: deposit.id,
+        eventType: 'CORRECTION',
+        oldStatus: 'selesai',
+        newStatus: 'selesai',
+        actorId: customerId,
+        metadata: { items, reason: 'Koreksi data setelah konfirmasi' },
+      },
+    });
+
+    return this.mapDeposit(deposit);
+  }
+
+  // E8: calculate total value for confirmed deposit (BSD-60)
+  async calculateConfirmedValue(id: string, petugasId: string) {
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+    if (!deposit) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
+    }
+    if (deposit.status !== 'selesai') {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Selesai yang bisa dihitung nilai.' });
+    }
+    // Calculate total weight and value
+    const items = deposit.items;
+    let totalWeight = new Decimal(0);
+    let totalValue = new Decimal(0);
+    for (const item of items) {
+      const weight = item.actualWeight ?? '0';
+      const price = item.unitPriceSnapshot ?? '0';
+      totalWeight = totalWeight.plus(new Decimal(weight));
+      totalValue = totalValue.plus(new Decimal(weight).times(new Decimal(price)));
+    }
+    return {
+      totalWeight: totalWeight.toFixed(3),
+      totalValue: totalValue.toFixed(2),
+      items: items.map(item => ({
+        id: item.id,
+        categoryId: item.categoryId,
+        actualWeight: item.actualWeight,
+        unitPriceSnapshot: item.unitPriceSnapshot,
+        lineTotal: new Decimal(item.actualWeight ?? '0').times(new Decimal(item.unitPriceSnapshot ?? '0')).toFixed(2),
+      })),
+    };
   }
 
   async updateStatus(id: string, petugasId: string, status: 'diproses') {
