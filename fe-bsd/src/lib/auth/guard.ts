@@ -1,8 +1,8 @@
 export type Role = "nasabah" | "petugas" | "admin";
 
-/** Nama cookie sesi. Isi (mock): peran pengguna. */
-// shortcut: cookie berisi peran apa adanya (bisa dipalsukan di klien), ganti dengan sesi HttpOnly
-// dari be-bsd saat BSD-29/33 selesai; server tetap penentu akses sebenarnya.
+/** Nama cookie sesi. Isi: peran pengguna dari respons login be-bsd. */
+// shortcut: cookie berisi peran apa adanya (bisa dipalsukan di klien); proxy hanya gating tampilan,
+// be-bsd tetap penentu akses data. Ganti ke cookie HttpOnly bila be-bsd menyediakan sesi cookie.
 export const SESSION_COOKIE = "bsd_session";
 
 export const roleHome: Record<Role, string> = {

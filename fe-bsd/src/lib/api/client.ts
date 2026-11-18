@@ -1,4 +1,10 @@
 import { ApiError, fallbackMessage } from "./errors";
+import {
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  updateTokens,
+} from "../auth/session";
 
 /** Satu-satunya env publik FE. Kosong = mode mock (belum ada be-bsd yang terhubung). */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -18,17 +24,46 @@ export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
-const httpTransport: ApiTransport = async (
-  path,
-  { method = "GET", body, idempotencyKey, signal },
-) => {
+/** Satu refresh berbagi hasil untuk semua request yang kena 401 bersamaan. */
+let refreshInFlight: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  refreshInFlight ??= (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return null;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) {
+        clearSession();
+        return null;
+      }
+      const data = (await response.json()) as { accessToken: string; refreshToken: string };
+      updateTokens(data.accessToken, data.refreshToken);
+      return data.accessToken;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+async function send(path: string, options: RequestOptions, token: string | null): Promise<Response> {
+  const { method = "GET", body, idempotencyKey, signal } = options;
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    return await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -39,12 +74,23 @@ const httpTransport: ApiTransport = async (
     if (signal?.aborted) throw error;
     throw new ApiError(0, "NETWORK_ERROR", fallbackMessage(0));
   }
+}
+
+const httpTransport: ApiTransport = async (path, options) => {
+  let response = await send(path, options, getAccessToken());
+
+  // Access token 15 menit: sekali refresh lalu ulangi request (kecuali endpoint auth sendiri).
+  if (response.status === 401 && !path.startsWith("/auth/")) {
+    const token = await refreshAccessToken();
+    if (token) response = await send(path, options, token);
+  }
 
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as {
       code?: string;
       message?: string;
     } | null;
+    if (response.status === 401 && !path.startsWith("/auth/")) clearSession();
     throw new ApiError(
       response.status,
       data?.code ?? "UNKNOWN",
