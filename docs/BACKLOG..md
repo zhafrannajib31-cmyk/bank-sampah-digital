@@ -430,24 +430,28 @@ Selesai kalau:
 - [ ] Admin dapat membuat, mengaktifkan, dan menonaktifkan petugas
 - [ ] Petugas terhubung ke unit lewat `unit_staff` (FR-02)
 
-## [ ] BSD-33 · Halaman Login, Register, Lupa Password
+## [x] BSD-33 · Halaman Login, Register, Lupa Password
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-29, BSD-30
 
 Boleh sentuh: `fe-bsd/src/app/(auth)/`, `fe-bsd/src/components/ui/`, `fe-bsd/src/lib/api/`
 
 Selesai kalau:
-- [ ] Validasi form dan pesan error jelas (TC-01, TC-10)
-- [ ] Ada loading dan error state
+- [x] Validasi form dan pesan error jelas (TC-01, TC-10)
+- [x] Ada loading dan error state
 
-## [ ] BSD-34 · Auth state dan proteksi route per role
+Catatan penyelesaian (19 Nov 2026): form login/register/lupa kata sandi kini memanggil be-bsd sungguhan (mock hanya aktif bila `NEXT_PUBLIC_API_URL` kosong). Payload disesuaikan dengan DTO be-bsd (`phone` saat register, `{ refreshToken }` saat logout), aturan kata sandi zod disamakan dengan be-bsd, dan `lib/api/client.ts` mengirim `Authorization: Bearer` serta mencoba satu kali refresh saat 401. Bukti: login/refresh rotasi/logout/`/auth/me` diverifikasi ke server 3001; `tsc` bersih, lint 0 error, `next build` lulus.
+
+## [x] BSD-34 · Auth state dan proteksi route per role
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-33
 
 Boleh sentuh: `fe-bsd/src/lib/auth/`, `fe-bsd/src/middleware.ts`
 
 Selesai kalau:
-- [ ] Pengguna tidak bisa membuka halaman role lain
-- [ ] Redirect ke beranda role setelah login
-- [ ] Route website publik tetap dapat diakses tanpa login
+- [x] Pengguna tidak bisa membuka halaman role lain
+- [x] Redirect ke beranda role setelah login
+- [x] Route website publik tetap dapat diakses tanpa login
+
+Catatan penyelesaian (19 Nov 2026): `lib/auth/session.ts` menyimpan `user`/`accessToken`/`refreshToken` di `localStorage` dan menulis cookie `bsd_session` (isi role) yang dibaca proxy; sesi dihapus otomatis saat 401 atau logout. Proxy tidak berubah — tetap memakai `resolveAccess`. Bukti (curl ke server dev 3000): `/nasabah` sebagai petugas → 307 `/petugas`, `/petugas` sebagai nasabah → 307 `/nasabah`, `/admin` sebagai petugas → 307, role cocok → 200, tanpa cookie → 307 `/login?next=...`, `/tentang` dan `/artikel` → 200 tanpa login. Catatan risiko: cookie hanya gating tampilan (bisa dipalsukan), akses data tetap ditentukan be-bsd (BSD-31).
 
 ## [ ] BSD-35 · Profil nasabah
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-34
