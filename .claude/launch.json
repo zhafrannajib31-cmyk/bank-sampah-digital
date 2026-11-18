@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fe-bsd",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "fe-bsd", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}
