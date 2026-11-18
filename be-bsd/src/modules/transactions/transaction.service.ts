@@ -29,6 +29,11 @@ export class TransactionService {
       },
     });
 
+    // Fetch user saldo
+    const user = await this.prisma.user.findUnique({
+      where: { id: customerId },
+    });
+
     return transactions.map(t => ({
       id: t.id,
       depositId: t.depositId,
@@ -40,6 +45,7 @@ export class TransactionService {
       confirmedAt: t.confirmedAt,
       status: t.status,
       createdAt: t.createdAt,
+      saldo: user?.saldo ?? '0',
     }));
   }
 
@@ -80,7 +86,14 @@ export class TransactionService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Anda tidak boleh melihat data ini.' });
     }
 
-    return this.mapTransaction(transaction);
+    const user = await this.prisma.user.findUnique({
+      where: { id: customerId },
+    });
+
+    return {
+      ...this.mapTransaction(transaction),
+      saldo: user?.saldo ?? '0',
+    };
   }
 
   private mapTransaction(transaction: any) {
