@@ -49,6 +49,59 @@ export class TransactionService {
     }));
   }
 
+  /** Petugas: ambil transaksi untuk unit yang ditugaskan (BSD-69). */
+  async getTransactionsByUnit(unitId: string, userId: string) {
+    const transactions = await this.prisma.transaction.findMany({
+      where: { unitId, status: 'active' },
+      orderBy: { confirmedAt: 'desc' },
+      include: {
+        deposit: {
+          select: {
+            id: true,
+            status: true,
+            submittedAt: true,
+            cancelledAt: true,
+            cancellationReason: true,
+            completedAt: true,
+          },
+        },
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            serviceStatus: true,
+          },
+        },
+      },
+    });
+
+    // Fetch user saldo (dari token JWT, bukan dari DB)
+    // (saldo hanya untuk NASABAH; petugas tidak perlu lihat)
+    return transactions.map(t => ({
+      id: t.id,
+      depositId: t.depositId,
+      unitId: t.unitId,
+      unitName: t.unit?.name,
+      unitAddress: t.unit?.address,
+      unitServiceStatus: t.unit?.serviceStatus,
+      totalWeight: t.totalWeight,
+      totalValue: t.totalValue,
+      confirmedBy: t.confirmedBy,
+      confirmedAt: t.confirmedAt,
+      status: t.status,
+      createdAt: t.createdAt,
+      deposit: {
+        id: t.deposit.id,
+        status: t.deposit.status,
+        submittedAt: t.deposit.submittedAt,
+        cancelledAt: t.deposit.cancelledAt,
+        cancellationReason: t.deposit.cancellationReason,
+        completedAt: t.deposit.completedAt,
+      },
+    }));
+  }
+
   async getTransactionDetail(id: string, customerId: string) {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },

@@ -18,6 +18,16 @@ export class TransactionController {
     return this.transactionService.getTransactions(customerId);
   }
 
+  /** Petugas: riwayat transaksi untuk unit yang ditugaskan (BSD-69). */
+  @Get('petugas')
+  @Roles('petugas')
+  async getTransactionsByUnit(
+    @Query('unitId', ParseUUIDPipe) unitId: string,
+    @Query('userId', ParseUUIDPipe) userId: string,
+  ) {
+    return this.transactionService.getTransactionsByUnit(unitId, userId);
+  }
+
   @Get(':id')
   @Roles('nasabah')
   async getTransactionDetail(
