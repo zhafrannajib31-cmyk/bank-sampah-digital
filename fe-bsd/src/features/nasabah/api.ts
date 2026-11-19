@@ -157,4 +157,6 @@ export const nasabahApi = {
       // respons hilang bisa membuat pengajuan ganda. Upgrade saat BSD-49 ditambah kolom kunci.
       idempotencyKey,
     }),
+  cancelDeposit: (id: string, reason: string) =>
+    request<ApiDeposit>(`/deposits/${id}/batal`, { method: "PATCH", body: { reason } }),
 };

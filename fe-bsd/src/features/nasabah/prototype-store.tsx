@@ -27,6 +27,7 @@ interface NasabahContextValue {
   /** Kategori beserta harga yang berlaku di unit tersebut (unit menimpa global). */
   categoriesForUnit: (unitId: string) => WasteCategory[];
   submitDeposit: (draft: DepositDraft, idempotencyKey?: string) => Promise<Deposit>;
+  cancelDeposit: (id: string, reason: string) => Promise<void>;
   updateProfile: (profile: NasabahProfile) => Promise<void>;
   reload: () => void;
   isLoading: boolean;
@@ -110,6 +111,11 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     return created;
   }, []);
 
+  const cancelDeposit = useCallback(async (id: string, reason: string) => {
+    const updated = toDeposit(await nasabahApi.cancelDeposit(id, reason));
+    setDeposits((current) => current.map((deposit) => (deposit.id === id ? updated : deposit)));
+  }, []);
+
   const updateProfile = useCallback(async (nextProfile: NasabahProfile) => {
     // shortcut: belum ada API profil nasabah (BSD-35); perubahan hanya bertahan di sesi ini.
     setProfile(nextProfile);
@@ -123,6 +129,7 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       categories,
       categoriesForUnit,
       submitDeposit,
+      cancelDeposit,
       updateProfile,
       reload: () => {
         setIsLoading(true);
@@ -132,7 +139,19 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
     }),
-    [deposits, profile, units, categories, categoriesForUnit, submitDeposit, updateProfile, load, isLoading, error],
+    [
+      deposits,
+      profile,
+      units,
+      categories,
+      categoriesForUnit,
+      submitDeposit,
+      cancelDeposit,
+      updateProfile,
+      load,
+      isLoading,
+      error,
+    ],
   );
 
   return <NasabahContext.Provider value={value}>{children}</NasabahContext.Provider>;

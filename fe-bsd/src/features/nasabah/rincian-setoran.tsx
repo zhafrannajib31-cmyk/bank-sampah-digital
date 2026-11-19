@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { Asset } from "@/components/ui";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { Asset, Button } from "@/components/ui";
+import { userMessage } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { depositTitle, statusMeta } from "./deposit-ui";
 import { formatClock, formatDateMedium, formatRupiah, formatWeight } from "./format";
+import { usePrototype } from "./prototype-store";
 import type { BankUnit, Deposit } from "./types";
 
 const nextSteps: Record<string, { title: string; steps: string[] }> = {
@@ -32,6 +37,155 @@ const nextSteps: Record<string, { title: string; steps: string[] }> = {
   },
 };
 
+/** Panel pembatalan di dalam halaman: alasan wajib, error tampil di sini, form tetap terbuka saat gagal. */
+function CancelDepositPanel({ depositId }: { depositId: string }) {
+  const { cancelDeposit } = usePrototype();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+  const restoreFocus = useRef(false);
+  const fieldId = useId();
+  const hintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const titleId = `${fieldId}-title`;
+
+  useEffect(() => {
+    if (open) {
+      fieldRef.current?.focus();
+    } else if (restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [open]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = reason.trim();
+
+    if (trimmed.length < 5) {
+      setError("Alasan minimal 5 karakter.");
+      fieldRef.current?.focus();
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      // Sukses mengganti status di store, jadi panel ini otomatis hilang.
+      await cancelDeposit(depositId, trimmed);
+    } catch (cause) {
+      setError(userMessage(cause));
+      setIsSubmitting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <div className="px-5 pb-5">
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen(true)}
+          className="min-h-11 w-full rounded-full text-[13px] leading-[18px] font-semibold text-danger-dark transition-colors hover:bg-danger-soft focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          Batalkan Pengajuan
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <section className="px-5 pb-5">
+      <form
+        onSubmit={submit}
+        aria-labelledby={titleId}
+        className="flex flex-col gap-3 rounded-[18px] border border-danger/30 bg-white p-4"
+      >
+        <div className="flex flex-col gap-1">
+          <h2 id={titleId} className="text-[14px] leading-[20px] font-bold text-heading">
+            Batalkan pengajuan ini?
+          </h2>
+          <p className="text-[12px] leading-[18px] text-subtle">
+            Pengajuan yang dibatalkan tidak bisa dikembalikan. Kamu tetap bisa mengajukan setoran
+            baru kapan saja.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={fieldId} className="text-[13px] leading-[18px] font-semibold text-heading">
+            Alasan pembatalan{" "}
+            <span aria-hidden className="text-danger">
+              *
+            </span>
+          </label>
+          <textarea
+            ref={fieldRef}
+            id={fieldId}
+            name="reason"
+            rows={3}
+            required
+            value={reason}
+            disabled={isSubmitting}
+            onChange={(event) => {
+              setReason(event.target.value);
+              setError(null);
+            }}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+            placeholder="Contoh: rencana berubah, sampah sudah diambil pihak lain."
+            className={cn(
+              "block min-h-[84px] w-full resize-none rounded-[12px] border bg-surface px-3 py-2.5 text-[13px] leading-[19px] text-heading placeholder:text-subtle/70 focus:ring-2 focus:outline-none",
+              "disabled:cursor-not-allowed disabled:bg-canvas disabled:text-subtle",
+              error
+                ? "border-danger focus:border-danger focus:ring-danger/25"
+                : "border-line focus:border-accent focus:ring-accent/25",
+            )}
+          />
+          <p id={hintId} className="text-[12px] leading-[17px] text-subtle">
+            Minimal 5 karakter.
+          </p>
+          {error ? (
+            <p
+              id={errorId}
+              role="alert"
+              className="text-[12px] leading-[17px] font-semibold text-danger"
+            >
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-[10px]">
+          <Button
+            type="submit"
+            variant="danger"
+            isLoading={isSubmitting}
+            loadingText="Membatalkan…"
+            className="w-full"
+          >
+            Ya, batalkan pengajuan
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => {
+              restoreFocus.current = true;
+              setOpen(false);
+            }}
+            className="w-full border-line"
+          >
+            Kembali
+          </Button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 /** Rincian setoran yang belum selesai (Menunggu, Diproses) atau Dibatalkan, gaya "Detail Dibatalkan" di Figma. */
 export function RincianSetoran({ deposit, unit }: { deposit: Deposit; unit?: BankUnit }) {
   const meta = statusMeta[deposit.status];
@@ -45,13 +199,11 @@ export function RincianSetoran({ deposit, unit }: { deposit: Deposit; unit?: Ban
       label: "Estimasi berat",
       value: `${formatWeight(estimatedWeight)} (${depositTitle(deposit)})`,
     },
-    cancelled
-      ? {
-          icon: "/nasabah/detail-phone.svg",
-          label: "Dibatalkan oleh",
-          value: deposit.cancelledBy ?? "Petugas Unit",
-        }
-      : { icon: "/nasabah/detail-phone.svg", label: "Metode", value: "Antar Sendiri" },
+    {
+      icon: "/nasabah/detail-phone.svg",
+      label: "Metode",
+      value: "Antar Sendiri",
+    },
   ];
   const table: [string, string][] = cancelled
     ? [
@@ -161,6 +313,8 @@ export function RincianSetoran({ deposit, unit }: { deposit: Deposit; unit?: Ban
           </ol>
         </div>
       </section>
+
+      {deposit.status === "menunggu" ? <CancelDepositPanel depositId={deposit.id} /> : null}
 
       <div className="sticky bottom-0 mt-auto flex items-center gap-[10px] border-t-[0.5px] border-line bg-white px-5 pt-[14px] pb-[21px]">
         {!cancelled && unit ? (
