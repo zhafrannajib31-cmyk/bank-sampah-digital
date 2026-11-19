@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Asset, EmptyState } from "@/components/ui";
+import { Asset, EmptyState, ErrorState } from "@/components/ui";
 import { formatDistance } from "@/features/nasabah/format";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import { StepNext } from "@/features/nasabah/step-screen";
@@ -18,33 +18,43 @@ const filters: { id: Filter; label: string }[] = [
   { id: "logam", label: "Menerima Logam" },
 ];
 
-const categoryLabel: Record<string, string> = {
-  plastik: "Plastik",
-  kertas: "Kertas",
-  kardus: "Kardus",
-  logam: "Logam",
-  "botol-kaca": "Botol kaca",
-  elektronik: "Elektronik",
-};
-
-function applyFilter(units: BankUnit[], filter: Filter, query: string): BankUnit[] {
+function applyFilter(
+  units: BankUnit[],
+  filter: Filter,
+  query: string,
+  logamIds: string[],
+): BankUnit[] {
   const q = query.trim().toLowerCase();
   let result = units.filter(
     (unit) => !q || `${unit.name} ${unit.address}`.toLowerCase().includes(q),
   );
   if (filter === "buka") result = result.filter((unit) => unit.isOpen);
-  if (filter === "logam") result = result.filter((unit) => unit.categoryIds.includes("logam"));
-  if (filter === "terdekat") result = [...result].sort((a, b) => a.distanceKm - b.distanceKm);
+  if (filter === "logam")
+    result = result.filter((unit) => unit.categoryIds.some((id) => logamIds.includes(id)));
+  if (filter === "terdekat")
+    result = [...result].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
   return result;
 }
 
 export default function PilihUnitPage() {
-  const { units } = usePrototype();
+  const { units, categories, isLoading, error, reload } = usePrototype();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("semua");
   const [pickedId, setPickedId] = useState<string | null>(null);
 
-  const visible = useMemo(() => applyFilter(units, filter, query), [units, filter, query]);
+  const categoryNames = useMemo(
+    () => Object.fromEntries(categories.map((category) => [category.id, category.name])),
+    [categories],
+  );
+  const logamIds = useMemo(
+    () => categories.filter((category) => /logam/i.test(category.name)).map((category) => category.id),
+    [categories],
+  );
+
+  const visible = useMemo(
+    () => applyFilter(units, filter, query, logamIds),
+    [units, filter, query, logamIds],
+  );
   // Unit terpilih: pilihan pengguna, atau unit buka pertama pada hasil.
   const selected =
     visible.find((unit) => unit.id === pickedId && unit.isOpen) ??
@@ -114,9 +124,15 @@ export default function PilihUnitPage() {
       <section className="flex-1 bg-canvas px-5 pt-[14px] pb-6" aria-label="Daftar unit">
         <div className="mx-auto flex w-full max-w-[1072px] flex-col gap-[10px]">
           <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
-            {visible.length} unit ditemukan · data simulasi
+            {visible.length} unit ditemukan
           </p>
-          {visible.length === 0 ? (
+          {isLoading ? (
+            <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
+              Memuat daftar unit…
+            </p>
+          ) : error ? (
+            <ErrorState title="Daftar unit gagal dimuat" description={error} onRetry={reload} />
+          ) : visible.length === 0 ? (
             <EmptyState title="Unit tidak ditemukan" description="Ubah kata kunci atau filter." />
           ) : (
             <ul className="grid grid-cols-1 gap-[12.5px] md:grid-cols-2 lg:grid-cols-3">
@@ -125,6 +141,7 @@ export default function PilihUnitPage() {
                   <UnitCard
                     unit={unit}
                     selected={selected?.id === unit.id}
+                    categoryNames={categoryNames}
                     onSelect={() => setPickedId(unit.id)}
                   />
                 </li>
@@ -163,10 +180,12 @@ export default function PilihUnitPage() {
 function UnitCard({
   unit,
   selected,
+  categoryNames,
   onSelect,
 }: {
   unit: BankUnit;
   selected: boolean;
+  categoryNames: Record<string, string>;
   onSelect: () => void;
 }) {
   return (
@@ -200,10 +219,12 @@ function UnitCard({
           <Asset src="/nasabah/icon-clock-sm.svg" width={12} height={12} />
           {unit.shortHours}
         </span>
-        <span className="flex items-center gap-[7px] text-[12px] leading-[16px] text-body-muted">
-          <Asset src="/nasabah/icon-pin-sm.svg" width={11} height={11} />
-          {formatDistance(unit.distanceKm)}
-        </span>
+        {unit.distanceKm !== undefined ? (
+          <span className="flex items-center gap-[7px] text-[12px] leading-[16px] text-body-muted">
+            <Asset src="/nasabah/icon-pin-sm.svg" width={11} height={11} />
+            {formatDistance(unit.distanceKm)}
+          </span>
+        ) : null}
       </span>
       <span className="flex flex-wrap gap-[5px]">
         {unit.categoryIds.map((id) => (
@@ -211,7 +232,7 @@ function UnitCard({
             key={id}
             className="flex h-[22px] items-center rounded-[14px] bg-canvas px-[9px] text-[12px] text-body-muted"
           >
-            {categoryLabel[id] ?? id}
+            {categoryNames[id] ?? "Kategori"}
           </span>
         ))}
       </span>

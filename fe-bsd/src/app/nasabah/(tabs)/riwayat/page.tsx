@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EmptyState } from "@/components/ui";
 import { DepositEntry, GroupLabel, isToday } from "@/features/nasabah/deposit-ui";
+import { formatDateMedium } from "@/features/nasabah/format";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import type { DepositStatus } from "@/features/nasabah/types";
 import { cn } from "@/lib/cn";
@@ -66,7 +67,7 @@ export default function RiwayatPage() {
           <ul className="gap-5 md:columns-2 lg:columns-3">
             {today.length > 0 ? (
               <li className="pb-[10px] break-after-avoid">
-                <GroupLabel>HARI INI · 25 OKT 2026</GroupLabel>
+                <GroupLabel>{`HARI INI · ${formatDateMedium(new Date().toISOString()).toUpperCase()}`}</GroupLabel>
               </li>
             ) : null}
             {today.map((deposit) => (

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Asset, ErrorState } from "@/components/ui";
 import { formatDistance, formatRupiah } from "@/features/nasabah/format";
-import { PRICE_EFFECTIVE_DATE } from "@/features/nasabah/mock-data";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import { cn } from "@/lib/cn";
 
@@ -16,7 +15,7 @@ const steps = [
 
 export default function DetailUnitPage() {
   const { unitId } = useParams<{ unitId: string }>();
-  const { units, categories } = usePrototype();
+  const { units, categoriesForUnit } = usePrototype();
   const unit = units.find((candidate) => candidate.id === unitId);
 
   if (!unit) {
@@ -35,7 +34,7 @@ export default function DetailUnitPage() {
     );
   }
 
-  const prices = categories.filter((category) => unit.categoryIds.includes(category.id));
+  const prices = categoriesForUnit(unit.id);
   const phoneHref = `tel:${unit.phone.replace(/[^\d+]/g, "")}`;
   const infoRows = [
     { icon: "/nasabah/detail-map-pin.svg", label: "Alamat", value: `${unit.address}, Jawa Barat` },
@@ -73,7 +72,10 @@ export default function DetailUnitPage() {
                 </span>
               </div>
               <p className="text-[12px] leading-[17px] text-subtle">
-                Bank Sampah Unit · {formatDistance(unit.distanceKm)} dari kamu
+                Bank Sampah Unit
+                {unit.distanceKm !== undefined
+                  ? ` · ${formatDistance(unit.distanceKm)} dari kamu`
+                  : null}
               </p>
             </div>
             <ul className="flex flex-col gap-[14px]">
@@ -98,7 +100,7 @@ export default function DetailUnitPage() {
           <h2 id="harga" className="text-[15px] leading-[20px] font-bold text-heading">
             Jenis &amp; Harga Sampah
           </h2>
-          <p className="text-[12px] text-subtle">Berlaku {PRICE_EFFECTIVE_DATE}</p>
+          <p className="text-[12px] text-subtle">Harga aktif unit ini</p>
         </div>
         <ul className="overflow-hidden rounded-[18px] border border-line bg-white text-[13px] text-heading">
           {prices.map((category) => (

@@ -13,14 +13,13 @@ import { cn } from "@/lib/cn";
 export default function PilihJenisPage() {
   const { unitId } = useParams<{ unitId: string }>();
   const router = useRouter();
-  const { units, categories } = usePrototype();
+  const { categoriesForUnit } = usePrototype();
   const { draft } = useDraft();
   // Pilihan lokal; sebelum disentuh, ikut draft (hanya jika draft untuk unit yang sama).
   const [touched, setTouched] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const unit = units.find((candidate) => candidate.id === unitId);
-  const offered = categories.filter((category) => unit?.categoryIds.includes(category.id));
+  const offered = categoriesForUnit(unitId);
   const fromDraft = draft?.unitId === unitId ? draft.items.map((item) => item.categoryId) : [];
   const selected = touched ?? fromDraft;
   const selectedNames = offered.filter((c) => selected.includes(c.id)).map((c) => c.name);
@@ -85,7 +84,7 @@ export default function PilihJenisPage() {
                       : "border-[0.5px] border-black/50 bg-white",
                   )}
                 >
-                  <CategoryTile id={category.id} />
+                  <CategoryTile id={category.id} name={category.name} />
                   {isSelected ? (
                     <span className="absolute top-[14px] right-3">
                       <CheckBadge />

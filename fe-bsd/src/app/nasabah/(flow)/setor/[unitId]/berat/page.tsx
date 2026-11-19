@@ -21,10 +21,12 @@ import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
 export default function BeratPage() {
   const { unitId } = useParams<{ unitId: string }>();
   const router = useRouter();
-  const { categories } = usePrototype();
+  const { categoriesForUnit } = usePrototype();
   const { draft, ready } = useDraft();
   const [typed, setTyped] = useState<Record<string, string>>({});
   const [showErrors, setShowErrors] = useState(false);
+
+  const categories = categoriesForUnit(unitId);
 
   const backHref = `/nasabah/setor/${unitId}/jenis`;
   const header = <StepHeader title="Berat Sampah" step={3} totalSteps={5} backHref={backHref} />;

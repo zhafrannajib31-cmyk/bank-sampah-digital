@@ -8,7 +8,8 @@ export interface BankUnit {
   /** Ringkas untuk kartu daftar, mis. 08.00 – 16.00 atau Buka lagi besok 08.00. */
   shortHours: string;
   phone: string;
-  distanceKm: number;
+  /** Tidak diisi selama izin lokasi/koordinat belum tersedia (BSD-46). */
+  distanceKm?: number;
   isOpen: boolean;
   categoryIds: string[];
 }

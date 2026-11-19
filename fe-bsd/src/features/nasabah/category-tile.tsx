@@ -10,9 +10,19 @@ const tiles: Record<string, { src: string; w: number; h: number; plain?: boolean
   elektronik: { src: "/nasabah/cat-elektronik-icon.svg", w: 20, h: 20, plain: true },
 };
 
+/** Cocokkan nama kategori (data be-bsd memakai UUID, bukan slug). */
+function byName(name: string) {
+  if (/plastik/i.test(name)) return tiles.plastik;
+  if (/kertas|kardus/i.test(name)) return tiles.kertas;
+  if (/logam|kaleng/i.test(name)) return tiles.logam;
+  if (/kaca/i.test(name)) return tiles["botol-kaca"];
+  if (/elektronik/i.test(name)) return tiles.elektronik;
+  return undefined;
+}
+
 /** Ubin ikon 30 px. SVG gabungan (ubin + tanda centang) dipotong hanya ubinnya. */
-export function CategoryTile({ id }: { id: string }) {
-  const tile = tiles[id];
+export function CategoryTile({ id, name }: { id: string; name?: string }) {
+  const tile = (name ? byName(name) : undefined) ?? tiles[id];
   if (!tile) return <span className="block size-[30px]" />;
 
   return (

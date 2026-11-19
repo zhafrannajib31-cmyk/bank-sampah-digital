@@ -155,7 +155,10 @@ export default function BerandaPage() {
                     href={`/nasabah/setoran/${deposit.id}`}
                     className="flex min-h-[72px] items-center gap-3 rounded-[15px] bg-white px-3 py-4 drop-shadow-[0_4px_2px_rgba(0,0,0,0.05)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
-                    <CategoryTile id={deposit.items[0]?.categoryId ?? ""} />
+                    <CategoryTile
+                      id={deposit.items[0]?.categoryId ?? ""}
+                      name={deposit.items[0]?.categoryName}
+                    />
                     <span className="flex min-w-0 flex-1 flex-col font-jakarta">
                       <span className="text-[14px] leading-[20px] font-semibold text-ink">
                         {depositTitle(deposit)}

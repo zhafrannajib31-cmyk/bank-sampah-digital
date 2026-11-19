@@ -23,7 +23,7 @@ import { OFFLINE_MESSAGE } from "@/lib/use-online";
 
 export default function RingkasanSetoranPage() {
   const router = useRouter();
-  const { units, categories, submitDeposit } = usePrototype();
+  const { units, categoriesForUnit, submitDeposit } = usePrototype();
   const { draft, ready } = useDraft();
   // Satu kunci per kunjungan layar ini; dipakai ulang saat "Coba lagi" agar tidak ganda.
   const [idempotencyKey] = useState(newIdempotencyKey);
@@ -33,8 +33,11 @@ export default function RingkasanSetoranPage() {
   const unit = draft ? units.find((candidate) => candidate.id === draft.unitId) : undefined;
   // Simulasi sisi server (prototype); di aplikasi nyata nilai datang dari respons API.
   const estimate = useMemo(
-    () => (draft && isDraftComplete(draft) ? calculateEstimate(draft, categories) : null),
-    [categories, draft],
+    () =>
+      draft && isDraftComplete(draft)
+        ? calculateEstimate(draft, categoriesForUnit(draft.unitId))
+        : null,
+    [categoriesForUnit, draft],
   );
   const backHref = draft ? `/nasabah/setor/${draft.unitId}/metode` : "/nasabah/setor";
 
@@ -108,7 +111,7 @@ export default function RingkasanSetoranPage() {
               key={item.categoryId}
               className="flex h-[70px] items-center gap-3 rounded-[20px] border-[0.1px] border-black bg-white px-3 shadow-[0_4px_4px_rgba(0,0,0,0.1)]"
             >
-              <CategoryTile id={item.categoryId} />
+              <CategoryTile id={item.categoryId} name={item.categoryName} />
               <div className="flex flex-1 flex-col gap-[6px]">
                 <p className="text-[14px] leading-[16.5px] font-medium tracking-[-0.275px] text-black">
                   {item.categoryName}

@@ -2,12 +2,9 @@ import Link from "next/link";
 import { Asset } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { dayKey, formatDayMonth, formatRupiah, formatWeight } from "./format";
-import { SEED_TODAY } from "./mock-data";
 import type { Deposit, DepositStatus } from "./types";
 
-// shortcut: "hari ini" mengikuti tanggal data contoh (25 Okt 2026), bukan jam perangkat;
-// ganti dengan tanggal server saat API sungguhan tersedia.
-export const isToday = (iso: string) => dayKey(iso) === SEED_TODAY;
+export const isToday = (iso: string) => dayKey(iso) === dayKey(new Date().toISOString());
 
 export const statusMeta: Record<DepositStatus, { label: string; badge: string; symbol: string }> = {
   selesai: {
