@@ -16,10 +16,10 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 | Item | Status |
 | --- | --- |
-| Fase saat ini | Pengembangan MVP (E3 – fondasi backend dan database) |
-| Sprint berjalan | Sprint 2 (dikerjakan mulai 17 November 2026) |
+| Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
+| Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task (BSD-01 s.d. BSD-103) |
-| Task selesai | 30 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 (fondasi backend: skema database, seed simulasi, arsitektur API, OpenAPI, keamanan dasar, modul auth, reset kata sandi, RBAC + guard global) selesai 17–18 Nov 2026, lalu BSD-33–34 (auth FE: login/register/lupa kata sandi terhubung be-bsd, sesi token, proteksi route per role) selesai 19 Nov 2026 — E3 selesai, E4 berjalan |
+| Task selesai | 34 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 (fondasi backend: skema database, seed simulasi, arsitektur API, OpenAPI, keamanan dasar, modul auth, reset kata sandi, RBAC + guard global) selesai 17–18 Nov 2026, BSD-33–34 (auth FE: login/register/lupa kata sandi terhubung be-bsd, sesi token, proteksi route per role) selesai 19 Nov 2026, lalu BSD-49/50/52/53 (API pengajuan setoran + estimasi nilai dan layar setor nasabah yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4 dan E7 berjalan |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -33,7 +33,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E4 | Autentikasi, role, dan keamanan akses | 2 | 5 / 8 | Sedang berjalan (BSD-29, BSD-30, BSD-31, BSD-33, BSD-34 selesai; BSD-32 dan BSD-35/36 berikutnya) |
 | E5 | Data master | 2–3 | 0 / 7 | Belum mulai |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
-| E7 | Pengajuan setoran | 3 | 0 / 7 | Belum mulai |
+| E7 | Pengajuan setoran | 3 | 4 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-52, BSD-53 selesai; BSD-51 API selesai, tombol batal FE menyusul) |
 | E8 | Penimbangan dan transaksi | 4 | 0 / 9 | Belum mulai |
 | E9 | Riwayat, saldo, bukti transaksi | 4 | 0 / 5 | Belum mulai |
 | E10 | Dashboard dan laporan | 5 | 0 / 4 | Belum mulai |
@@ -113,11 +113,17 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 
 || 17 Nov 2026 | BSD-39 | Menambahkan API harga sampah + histori: `GET /waste-prices` (daftar, filter status/categoryId), `POST /waste-prices`, `PATCH /waste-prices/:id`, `DELETE /waste-prices/:id`. Harga aktif dipilih berdasarkan tanggal berlaku dan unit. `unit_id` NULL = harga global; `is_simulated` untuk data contoh. Setiap perubahan harga dicatat dengan `createdBy` & `created_at` (NFR-04). `prisma validate` + `generate`, lint, test, build lulus. | Zhafran Najib | `be-bsd/src/modules/waste-prices/`, `be-bsd/src/modules/waste-prices/dto/`; `tsc`, lint, build lulus | Selesai |
 
+### Sprint 3 (usulan 14–25 Des 2026) – Pencarian Unit dan Pengajuan Setoran
+
 **Sprint Goal:** Nasabah dapat mencari unit dan mengajukan setoran; petugas melihat pengajuan unitnya.
 
 | Tanggal | ID Task | Pekerjaan yang Dilakukan | Pelaksana | Hasil / Bukti | Status |
 | --- | --- | --- | --- | --- | --- |
-| *isi* |  |  |  |  |  |
+| 18 Nov 2026 | BSD-49 | `POST /deposits` (role nasabah) menyimpan pengajuan + item kategori. DTO `CreateDepositDto` memakai `@IsUUID` untuk unit/kategori dan pola berat desimal positif (maks 3 desimal, dikirim string); unit harus published. Ditambahkan `GET /deposits` (daftar pengajuan milik nasabah, terbaru dulu) karena sebelumnya hanya ada `GET /deposits/:id`. | Zhafran Najib | `be-bsd/src/modules/deposits/`; e2e BE 30/30 lulus, build lulus; curl 2 item (2 kg PET @4000 + 0,5 kg Kaleng @8000) → `estimatedTotal` 12000, `code` BSD-2026-49259E | Selesai |
+| 18 Nov 2026 | BSD-50 | `withEstimate()` mengisi `items[].pricePerKg`, `items[].estimatedValue`, `estimatedTotal`, dan label `"bukan nilai final"` pada create/detail/daftar. Harga memakai `activePrices()` dengan aturan harga unit menimpa global; respons juga memuat `code` tiket, `unitName`, `unitAddress`, `categoryName`. | Zhafran Najib | `be-bsd/src/modules/deposits/deposit.service.ts`; PET unit Cibeunying terbukti 4000 (bukan global 3500), e2e & build lulus | Selesai |
+| 18 Nov 2026 | BSD-51 | API status & pembatalan: `GET /deposits/:id` (hanya milik nasabah) dan `PATCH /deposits/:id/batal` (alasan wajib, hanya status Menunggu, menulis `cancelledAt`/`cancellationReason` + event di `transaction_events`). | Zhafran Najib | `be-bsd/src/modules/deposits/`; e2e & build lulus | Sebagian — tombol batal di FE nasabah belum ada |
+| 19 Nov 2026 | BSD-52 | Layar setor membaca API sungguhan: `features/nasabah/api.ts` baru (mapper `toUnit`/`toCategory`/`toDeposit`, `resolvePrice` harga unit menimpa global, `nasabahApi`), `prototype-store.tsx` memuat units/kategori/harga/deposits/transaksi dengan kontrak `usePrototype()` tetap, `categoriesForUnit(unitId)` dipakai layar pilih unit, detail unit, jenis, berat, ringkasan. Daftar & detail unit dapat loading/error state; jarak disembunyikan (koordinat unit belum ada, BSD-46) dan filter "Terdekat" berhenti mengurutkan angka palsu. Konfirmasi mengirim berat sebagai string desimal. | Zhafran Najib | `fe-bsd/src/features/nasabah/{api.ts,prototype-store.tsx,category-tile.tsx}`, layar `app/nasabah/(flow)/setor/**`; `tsc` bersih, lint 0 error, `next build` lulus; bentuk respons dicocokkan ke mapper via curl 3001 | Selesai |
+| 19 Nov 2026 | BSD-53 | Riwayat & detail setoran memakai status dari API dengan label Indonesia yang konsisten; nilai final hanya untuk status Selesai (dari `transactions.totalValue` per `depositId`), status lain berlabel "Estimasi". Pengelompokan "Hari ini" tidak lagi terpaku tanggal data contoh (25 Okt 2026) — kini tanggal perangkat dan label tanggal mengikuti hari berjalan. | Zhafran Najib | `fe-bsd/src/features/nasabah/deposit-ui.tsx`, `app/nasabah/(tabs)/riwayat/page.tsx`; `GET /deposits` berisi 4 pengajuan (2 menunggu, 2 selesai) terpetakan benar | Selesai |
 
 ### Sprint 4 (usulan 28 Des 2026–8 Jan 2027) – Penimbangan dan Transaksi
 
@@ -162,6 +168,8 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 ||- [BSD-49][BE] API pembuatan pengajuan setoran: `POST /deposits` (nasabah, role: nasabah), status `Menunggu`, item kategori + estimasi berat. Validasi unit published, kategori valid, berat > 0. `prisma validate` + `generate`, lint, test, build lulus.
 ||- [BSD-50][BE] Estimasi nilai: respons memuat `estimatedValue` = `estimatedWeight` x `pricePerKg` (harga aktif, unit/kategori), berlabel `"bukan nilai final"` (FR-08). `prisma validate` + `generate`, lint, test, build lulus.
 ||- [BSD-51][BE] API status & pembatalan: `GET /deposits/:id` (nasabah, data milik), `PATCH /deposits/:id/batal` (alasan, role: nasabah). Status `Menunggu` hanya bisa dibatalkan. `cancelledAt`, `cancellationReason` terisi. `prisma validate` + `generate`, lint, test, build lulus.
+- [BSD-52][FE] Layar setor memakai API be-bsd: `features/nasabah/api.ts` (mapper `toUnit`/`toCategory`/`toDeposit`, `resolvePrice`, `nasabahApi`) + `prototype-store.tsx` memuat units/kategori/harga/deposits/transaksi dengan kontrak `usePrototype()` tetap; `categoriesForUnit(unitId)` dipakai layar pilih unit, detail unit, jenis, berat, dan ringkasan; daftar/detail unit punya loading + error state.
+- [BSD-53][FE] Riwayat & detail setoran memakai status dari API dengan nilai final hanya untuk status Selesai (dari `transactions.totalValue`) dan estimasi untuk status lain.
 
 **Changed**
 
@@ -185,11 +193,21 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-25][BE/DB] Backend kini memakai driver adapter Prisma 7 (`@prisma/adapter-pg`, `pg`, `@types/pg`) dan perintah seed `ts-node prisma/seed.ts`; `tsconfig.json` ditambah `ts-node.experimentalResolver` agar seed bisa memuat generated client.
 - [BSD-33][FE] Form login, register, dan lupa kata sandi terhubung ke be-bsd: `lib/api/client.ts` menyisipkan `Authorization: Bearer` dan menyegarkan access token sekali saat 401; data sesi (`user`, `accessToken`, `refreshToken`) disimpan oleh `features/auth/api.ts`; mock hanya dipakai bila `NEXT_PUBLIC_API_URL` kosong.
 - [BSD-34][FE] `lib/auth/session.ts`: simpan/baca/hapus sesi di `localStorage` + cookie role `bsd_session` untuk proxy; `resolveAccess` tetap jadi satu-satunya aturan gating route per role.
+- [BSD-52][FE] Sumber data layar nasabah berpindah dari mock ke be-bsd: `BankUnit.distanceKm` jadi opsional (koordinat unit belum diisi) sehingga kartu unit tidak menampilkan jarak dan filter "Terdekat" tidak mengurutkan data yang tidak ada; pengelompokan kategori per unit memakai harga aktif API, bukan `categoryIds` mock.
+- [BSD-53][FE] `isToday` memakai tanggal perangkat (sebelumnya terpaku `SEED_TODAY` 25 Okt 2026) dan label grup "Hari ini" mengikuti tanggal berjalan.
 
 **Fixed**
 
 - [FE] `/petugas/riwayat` punya dua halaman yang resolve ke path sama (`app/petugas/riwayat` dan `app/petugas/(tabs)/riwayat`) sehingga `next build` gagal; halaman duplikat (yang tidak memakai layout tab petugas) dihapus.
 - [FE] `/nasabah/riwayat/[id]` memakai `useParams()` tanpa `<Suspense>` sehingga prerender build gagal; komponen dibungkus `Suspense`.
+- [BSD-52][FE] `CategoryTile` hanya mengenal slug mock (`plastik`, `kertas`, `logam`, …), sehingga data API ber-UUID menampilkan kotak kosong tanpa ikon; komponen kini mencocokkan nama kategori dan menerima prop `name` dari layar pemanggil.
+- [BSD-52][FE] Payload `POST /deposits` mengirim `estimatedWeight` sebagai angka sehingga ditolak 400 (`estimatedWeight must be a string`); nilai kini dikirim sebagai string desimal sesuai DTO be-bsd.
+- [BSD-52][FE] Ikon kategori dan filter "Menerima Logam" memakai id mock (`logam`), tidak pernah cocok dengan kategori API; keduanya sekarang berbasis nama/id dari API.
+- [BSD-53][FE] Semua setoran nyata masuk grup "Sebelumnya" karena `isToday` membandingkan dengan tanggal data contoh; kini memakai tanggal perangkat.
+
+**Removed**
+
+- [BSD-52][FE] `buildDeposit()` di `features/nasabah/prototype-api.ts` dihapus: pembuatan pengajuan sekarang dilakukan `POST /deposits`, dan fungsi ini sudah tidak dipakai (kode mati).
 
 ### Template Entri Changelog
 
@@ -298,4 +316,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.10 | 17 Nov 2026 | Tambah log BSD-30 (reset kata sandi via token, migrasi password_reset_tokens, respons generik forgot), progres 27/103, E4 2/8, changelog BSD-30 | Zhafran Najib |
 | 1.11 | 18 Nov 2026 | Tambah log BSD-31 (JwtAuthGuard global + @Public, CommonModule/PrismaModule global, unit membership check, route baca data master untuk semua role login, pendaftaran TransactionModule, perbaikan DTO/snapshot/idempotensi/pembatalan), progres 28/103, E4 3/8, changelog BSD-31 | Zhafran Najib |
 | 1.12 | 19 Nov 2026 | Tambah log BSD-33/34 (auth FE terhubung be-bsd: simpan sesi token, header Authorization + refresh otomatis, cookie role, proteksi route per role terverifikasi), perbaikan build FE (route `/petugas/riwayat` duplikat, `useParams` butuh Suspense), progres 30/103, E4 5/8 | Zhafran Najib |
+| 1.13 | 19 Nov 2026 | Tambah log BSD-49/50/51/52/53 (API pengajuan setoran, estimasi nilai berlabel "bukan nilai final", pembatalan, layar setor nasabah terhubung API sungguhan, status setoran konsisten), progres 34/103, E7 4/7 (BSD-51 API selesai, UI menyusul), changelog Added/Changed/Fixed/Removed | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |

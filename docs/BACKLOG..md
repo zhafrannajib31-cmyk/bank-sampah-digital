@@ -592,48 +592,58 @@ Selesai kalau:
 
 # E7 · Pengajuan setoran nasabah (Sprint 3)
 
-## [ ] BSD-49 · API pembuatan pengajuan setoran
+## [x] BSD-49 · API pembuatan pengajuan setoran
 **Zhafran** · S3 · 5 SP · Prasyarat: BSD-23, BSD-44
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] Pengajuan tersimpan dengan status Menunggu dan item kategori (FR-07)
-- [ ] Angka dan kategori divalidasi
+- [x] Pengajuan tersimpan dengan status Menunggu dan item kategori (FR-07)
+- [x] Angka dan kategori divalidasi
 
-## [ ] BSD-50 · Logika estimasi nilai
+Catatan penyelesaian (18 Nov 2026): `POST /deposits` (role nasabah) menyimpan pengajuan + item. DTO `CreateDepositDto` memakai `@IsUUID` untuk unit/kategori dan pola berat desimal positif (maks 3 desimal, dikirim sebagai string) — payload angka murni ditolak 400 dengan pesan Indonesia. Unit harus published dan anggotanya tidak dibatasi. Ditambahkan `GET /deposits` (daftar pengajuan milik nasabah, terbaru dulu) karena sebelumnya hanya ada `GET /deposits/:id`. Bukti: e2e BE 30/30 lulus, `npm run build` lulus, verifikasi curl 2 item (2 kg PET @4000 + 0,5 kg Kaleng @8000) → `estimatedTotal` 12000, `code` BSD-2026-49259E.
+
+## [x] BSD-50 · Logika estimasi nilai
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-49
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] Respons memuat estimasi yang berlabel "bukan nilai final" (FR-08)
+- [x] Respons memuat estimasi yang berlabel "bukan nilai final" (FR-08)
 
-## [ ] BSD-51 · API status dan pembatalan pengajuan
+Catatan penyelesaian (18 Nov 2026): `withEstimate()` di `deposit.service.ts` mengisi `items[].pricePerKg`, `items[].estimatedValue`, `estimatedTotal`, dan `estimatedValueLabel: "bukan nilai final"` pada `create`, `getDeposit`, dan `listDeposits`. Harga memakai `activePrices()` — harga unit menimpa harga global (terbukti: PET unit Cibeunying 4000, bukan global 3500). Respons juga memuat `code` tiket (`BSD-<tahun>-<6 karakter id>`), `unitName`, `unitAddress`, dan `categoryName`. FE hanya menampilkan angka dari respons.
+
+## [/] BSD-51 · API status dan pembatalan pengajuan
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-49
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] Nasabah dapat membatalkan pengajuannya sendiri dengan alasan
-- [ ] Setiap perubahan status tercatat di `transaction_events`
+- [x] Nasabah dapat membatalkan pengajuannya sendiri dengan alasan
+- [x] Setiap perubahan status tercatat di `transaction_events`
 
-## [ ] BSD-52 · Halaman Pilih Jenis Sampah dan Konfirmasi Setoran
+Catatan penyelesaian sebagian (18–19 Nov 2026): API selesai — `GET /deposits/:id` (hanya milik nasabah) dan `PATCH /deposits/:id/batal` (alasan wajib, hanya status Menunggu, menulis `cancelledAt`/`cancellationReason` + event). Sisa: tombol batal di FE nasabah belum ada, jadi dari sisi pengguna fitur ini belum bisa dipakai. Ditutup setelah UI batal ditambahkan.
+
+## [x] BSD-52 · Halaman Pilih Jenis Sampah dan Konfirmasi Setoran
 **Zhafran** · S3 · 8 SP · Prasyarat: BSD-49, BSD-50
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/setor/`, `fe-bsd/src/components/`
 
 Selesai kalau:
-- [ ] Estimasi dan nilai final dibedakan jelas
-- [ ] Jam operasional dan alamat tampil sebelum konfirmasi
+- [x] Estimasi dan nilai final dibedakan jelas
+- [x] Jam operasional dan alamat tampil sebelum konfirmasi
 
-## [ ] BSD-53 · Halaman Status Setoran
+Catatan penyelesaian (19 Nov 2026): layar setor kini membaca API sungguhan. `features/nasabah/api.ts` baru memetakan respons be-bsd (`toUnit`/`toCategory`/`toDeposit`, `resolvePrice` dengan aturan harga unit menimpa global) dan `prototype-store.tsx` memuat units/kategori/harga/deposits/transaksi sekaligus (kontrak `usePrototype()` dipertahankan agar 15+ layar tidak ditulis ulang). Ditambahkan `categoriesForUnit(unitId)`; layar pilih unit, detail unit, jenis, berat, dan ringkasan memakainya, sehingga kategori/harga yang tampil sama dengan yang diterima server. Daftar unit dan detail unit punya loading + error state. Jarak (`distanceKm`) disembunyikan karena koordinat unit belum diisi (BSD-46) dan filter "Terdekat" tidak lagi mengurutkan angka palsu. Konfirmasi mengirim `POST /deposits` dengan berat sebagai string desimal; `estimatedTotal` di ringkasan hanya pratinjau, angka final di layar status diambil dari respons. Bukti: `tsc`, lint 0 error, `next build` lulus; curl ke server 3001 memastikan bentuk respons cocok dengan mapper dan `POST` berat string diterima.
+
+## [x] BSD-53 · Halaman Status Setoran
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-51
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/status/`
 
 Selesai kalau:
-- [ ] Status Menunggu, Diproses, Selesai, Dibatalkan konsisten bahasanya
+- [x] Status Menunggu, Diproses, Selesai, Dibatalkan konsisten bahasanya
+
+Catatan penyelesaian (19 Nov 2026): riwayat dan detail setoran memakai status dari API (`menunggu`/`diproses`/`selesai`/`dibatalkan`) dengan label bahasa Indonesia yang sama di semua layar. Nilai final hanya muncul untuk status Selesai (diambil dari `transactions.totalValue` yang digabung per `depositId`), status lain berlabel "Estimasi". Pengelompokan "Hari ini" sebelumnya terpaku pada tanggal data contoh (25 Okt 2026) sehingga semua setoran nyata masuk "Sebelumnya"; kini memakai tanggal perangkat dan label tanggalnya mengikuti hari berjalan. Bukti: `tsc`, lint, `next build` lulus; respons `GET /deposits` berisi 4 pengajuan (2 menunggu, 2 selesai) yang dipetakan ke tampilan.
 
 ## [ ] BSD-54 · Notifikasi status dalam aplikasi
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-51
