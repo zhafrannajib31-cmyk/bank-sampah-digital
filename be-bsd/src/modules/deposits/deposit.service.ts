@@ -37,11 +37,25 @@ export class DepositService {
         },
       },
       include: {
-        items: true,
+        items: { include: { category: { select: { name: true, description: true } } } },
+        unit: { select: { id: true, name: true, address: true } },
       },
     });
 
-    return this.mapDeposit(deposit);
+    return this.withEstimate(deposit);
+  }
+
+  /** Daftar pengajuan milik nasabah (terbaru dulu) untuk layar riwayat/beranda. */
+  async listDeposits(customerId: string) {
+    const deposits = await this.prisma.deposit.findMany({
+      where: { customerId },
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        items: { include: { category: { select: { name: true, description: true } } } },
+        unit: { select: { id: true, name: true, address: true } },
+      },
+    });
+    return Promise.all(deposits.map(deposit => this.withEstimate(deposit)));
   }
 
   async getDeposit(id: string, customerId: string) {
@@ -77,7 +91,7 @@ export class DepositService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Anda tidak boleh melihat data ini.' });
     }
 
-    return this.mapDeposit(deposit);
+    return this.withEstimate(deposit);
   }
 
   async cancelDeposit(id: string, customerId: string, reason: string) {
@@ -509,6 +523,66 @@ export class DepositService {
       return transaction;
     });
     return this.mapTransaction(result);
+  }
+
+  /**
+   * Harga aktif per kategori pada tanggal berjalan: harga unit menimpa harga global.
+   * Dipakai untuk estimasi tampilan (bukan nilai final; nilai final dari penimbangan).
+   */
+  private async activePrices(unitId: string, categoryIds: string[], at = new Date()) {
+    const rows = await this.prisma.wastePrice.findMany({
+      where: {
+        categoryId: { in: categoryIds },
+        status: 'active',
+        OR: [{ unitId }, { unitId: null }],
+        effectiveFrom: { lte: at },
+        AND: [{ OR: [{ effectiveTo: null }, { effectiveTo: { gte: at } }] }],
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    const picked = new Map<string, { price: any; unitSpecific: boolean }>();
+    for (const row of rows) {
+      const unitSpecific = row.unitId === unitId;
+      const current = picked.get(row.categoryId);
+      if (!current || (unitSpecific && !current.unitSpecific)) {
+        picked.set(row.categoryId, { price: row.pricePerKg, unitSpecific });
+      }
+    }
+    return new Map([...picked].map(([categoryId, value]) => [categoryId, value.price]));
+  }
+
+  /** Kode tiket untuk ditampilkan/diucapkan ke petugas. */
+  private ticketCode(id: string) {
+    return `BSD-${new Date().getFullYear()}-${id.slice(0, 6).toUpperCase()}`;
+  }
+
+  /** Pengajuan + estimasi nilai berlabel "bukan nilai final" (FR-08). */
+  private async withEstimate(deposit: any) {
+    const base = this.mapDeposit(deposit);
+    const categoryIds = [...new Set(base.items.map((item: any) => item.categoryId))] as string[];
+    const prices = categoryIds.length
+      ? await this.activePrices(deposit.unitId, categoryIds, deposit.submittedAt ?? new Date())
+      : new Map<string, any>();
+
+    let total = new Decimal(0);
+    const items = base.items.map((item: any) => {
+      const price = prices.get(item.categoryId) ?? null;
+      const estimatedValue =
+        price === null ? null : new Decimal(item.estimatedWeight).mul(price).toFixed(2);
+      if (estimatedValue !== null) total = total.add(estimatedValue);
+      return { ...item, pricePerKg: price, estimatedValue };
+    });
+
+    return {
+      ...base,
+      code: this.ticketCode(deposit.id),
+      unitName: deposit.unit?.name ?? null,
+      unitAddress: deposit.unit?.address ?? null,
+      estimatedTotal: total.toFixed(2),
+      estimatedValueLabel: 'bukan nilai final',
+      items,
+    };
   }
 
   private mapDeposit(deposit: any) {

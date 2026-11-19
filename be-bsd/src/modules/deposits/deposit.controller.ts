@@ -37,6 +37,20 @@ export class DepositController {
     return this.depositService.create(dto, customerId);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Daftar pengajuan milik nasabah (terbaru dulu)' })
+  @ApiResponse({ status: 200, description: 'Daftar pengajuan' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @UseGuards(RoleGuard)
+  @Roles('nasabah')
+  async list(@Req() req: any) {
+    const customerId = req.user?.sub;
+    if (!customerId) {
+      throw new Error('Customer ID not found in token');
+    }
+    return this.depositService.listDeposits(customerId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Lihat status pengajuan (nasabah sendiri)' })
   @ApiResponse({ status: 200, description: 'Status pengajuan' })
