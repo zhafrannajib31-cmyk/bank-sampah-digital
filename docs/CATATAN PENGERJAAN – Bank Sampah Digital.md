@@ -19,7 +19,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
 | Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task (BSD-01 s.d. BSD-103) |
-| Task selesai | 34 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 (fondasi backend: skema database, seed simulasi, arsitektur API, OpenAPI, keamanan dasar, modul auth, reset kata sandi, RBAC + guard global) selesai 17–18 Nov 2026, BSD-33–34 (auth FE: login/register/lupa kata sandi terhubung be-bsd, sesi token, proteksi route per role) selesai 19 Nov 2026, lalu BSD-49/50/52/53 (API pengajuan setoran + estimasi nilai dan layar setor nasabah yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4 dan E7 berjalan |
+| Task selesai | 36 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–38 (fondasi backend, auth, RBAC, CRUD unit & kategori) selesai 17–19 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53 (API pengajuan setoran + estimasi nilai dan layar setor nasabah yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4/E5/E7 berjalan |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -31,7 +31,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E2 | Analisis kebutuhan dan desain UX | 1 | 8 / 11 | Sedang berjalan |
 | E3 | Fondasi backend dan database | 2 | 8 / 8 | Selesai (migrasi & seed terverifikasi di PostgreSQL 16.6 lokal, K-04 tertutup; batas rate limit khusus endpoint auth menyusul BSD-29) |
 | E4 | Autentikasi, role, dan keamanan akses | 2 | 5 / 8 | Sedang berjalan (BSD-29, BSD-30, BSD-31, BSD-33, BSD-34 selesai; BSD-32 dan BSD-35/36 berikutnya) |
-| E5 | Data master | 2–3 | 0 / 7 | Belum mulai |
+| E5 | Data master | 2–3 | 2 / 7 | Sedang berjalan (BSD-37, BSD-38 selesai; BSD-39 CRUD ada, pemilihan harga aktif per tanggal/unit & `createdBy` menyusul) |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 4 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-52, BSD-53 selesai; BSD-51 API selesai, tombol batal FE menyusul) |
 | E8 | Penimbangan dan transaksi | 4 | 0 / 9 | Belum mulai |
@@ -317,4 +317,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.11 | 18 Nov 2026 | Tambah log BSD-31 (JwtAuthGuard global + @Public, CommonModule/PrismaModule global, unit membership check, route baca data master untuk semua role login, pendaftaran TransactionModule, perbaikan DTO/snapshot/idempotensi/pembatalan), progres 28/103, E4 3/8, changelog BSD-31 | Zhafran Najib |
 | 1.12 | 19 Nov 2026 | Tambah log BSD-33/34 (auth FE terhubung be-bsd: simpan sesi token, header Authorization + refresh otomatis, cookie role, proteksi route per role terverifikasi), perbaikan build FE (route `/petugas/riwayat` duplikat, `useParams` butuh Suspense), progres 30/103, E4 5/8 | Zhafran Najib |
 | 1.13 | 19 Nov 2026 | Tambah log BSD-49/50/51/52/53 (API pengajuan setoran, estimasi nilai berlabel "bukan nilai final", pembatalan, layar setor nasabah terhubung API sungguhan, status setoran konsisten), progres 34/103, E7 4/7 (BSD-51 API selesai, UI menyusul), changelog Added/Changed/Fixed/Removed | Zhafran Najib |
+| 1.14 | 19 Nov 2026 | Ralat centang BSD-37 & BSD-38 (kode dan changelog sudah ada, heading tertinggal belum dicentang), progres 36/103, E5 2/7; BSD-39 tetap terbuka karena pemilihan harga aktif per tanggal/unit dan `createdBy` belum ada | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |

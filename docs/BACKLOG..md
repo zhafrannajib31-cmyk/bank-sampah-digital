@@ -475,22 +475,26 @@ Selesai kalau:
 
 # E5 · Data master: unit, kategori, harga (Sprint 2-3)
 
-## [ ] BSD-37 · API CRUD unit Bank Sampah
+## [x] BSD-37 · API CRUD unit Bank Sampah
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-31
 
 Boleh sentuh: `be-bsd/src/modules/units/`
 
 Selesai kalau:
-- [ ] Hanya admin yang dapat membuat dan mengubah (FR-16)
-- [ ] Alamat, koordinat opsional, jam operasional, status, kontak tersimpan
+- [x] Hanya admin yang dapat membuat dan mengubah (FR-16)
+- [x] Alamat, koordinat opsional, jam operasional, status, kontak tersimpan
 
-## [ ] BSD-38 · API CRUD kategori sampah
+Catatan penyelesaian (17 Nov 2026): `GET /units` (semua role login), `GET /units/:id`, `POST`/`PATCH`/`DELETE /units/:id` + `GET /units/:id/distance` khusus admin. Field `address`, `latitude`, `longitude`, `operatingHours`, `contactPhone`, `contactEmail`, `serviceStatus`, `publicationStatus`, `isSimulated` tersimpan dan tervalidasi. Bukti: lint/build lulus; centang diralat 19 Nov 2026 karena task ini sebelumnya tertinggal belum dicentang padahal kode & changelog sudah ada.
+
+## [x] BSD-38 · API CRUD kategori sampah
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-31
 
 Boleh sentuh: `be-bsd/src/modules/waste-categories/`
 
 Selesai kalau:
-- [ ] Kategori dapat diaktifkan dan dinonaktifkan
+- [x] Kategori dapat diaktifkan dan dinonaktifkan
+
+Catatan penyelesaian (17 Nov 2026): `GET /waste-categories` (+ filter `status`), `POST`/`PATCH`/`DELETE` admin; `PATCH` menerima `status: 'active' | 'inactive'`. Bukti: lint/build lulus; centang diralat 19 Nov 2026.
 
 ## [ ] BSD-39 · API harga sampah dan histori
 **Zhafran** · S2 · 5 SP · Prasyarat: BSD-22, BSD-38
@@ -502,6 +506,8 @@ Prioritas harga: unit menimpa global (D-04).
 Selesai kalau:
 - [ ] Harga aktif dipilih berdasarkan tanggal berlaku dan unit
 - [ ] Setiap perubahan harga mencatat pengguna dan waktu (NFR-04)
+
+Catatan (19 Nov 2026): CRUD admin + daftar/filter `status`/`categoryId` sudah ada, tetapi dua kriteria selesai belum terpenuhi — pemilihan harga aktif per tanggal & unit masih dilakukan di `deposit.service.ts` (`activePrices()`), bukan di modul harga, dan `createdBy` belum disimpan. Task ini tetap terbuka.
 
 ## [ ] BSD-40 · Halaman admin: manajemen unit
 **Zhafran** · S3 · 5 SP · Prasyarat: BSD-37, BSD-34
