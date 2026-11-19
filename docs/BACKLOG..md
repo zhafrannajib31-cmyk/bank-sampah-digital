@@ -619,7 +619,7 @@ Selesai kalau:
 
 Catatan penyelesaian (18 Nov 2026): `withEstimate()` di `deposit.service.ts` mengisi `items[].pricePerKg`, `items[].estimatedValue`, `estimatedTotal`, dan `estimatedValueLabel: "bukan nilai final"` pada `create`, `getDeposit`, dan `listDeposits`. Harga memakai `activePrices()` — harga unit menimpa harga global (terbukti: PET unit Cibeunying 4000, bukan global 3500). Respons juga memuat `code` tiket (`BSD-<tahun>-<6 karakter id>`), `unitName`, `unitAddress`, dan `categoryName`. FE hanya menampilkan angka dari respons.
 
-## [/] BSD-51 · API status dan pembatalan pengajuan
+## [x] BSD-51 · API status dan pembatalan pengajuan
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-49
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
@@ -628,7 +628,7 @@ Selesai kalau:
 - [x] Nasabah dapat membatalkan pengajuannya sendiri dengan alasan
 - [x] Setiap perubahan status tercatat di `transaction_events`
 
-Catatan penyelesaian sebagian (18–19 Nov 2026): API selesai — `GET /deposits/:id` (hanya milik nasabah) dan `PATCH /deposits/:id/batal` (alasan wajib, hanya status Menunggu, menulis `cancelledAt`/`cancellationReason` + event). Sisa: tombol batal di FE nasabah belum ada, jadi dari sisi pengguna fitur ini belum bisa dipakai. Ditutup setelah UI batal ditambahkan.
+Catatan penyelesaian (19 Nov 2026): API — `GET /deposits/:id` (hanya milik nasabah) dan `PATCH /deposits/:id/batal` (alasan wajib, hanya status Menunggu, menulis `cancelledAt`/`cancellationReason` + event). UI — tombol "Batalkan Pengajuan" di detail setoran status Menunggu membuka panel konfirmasi dengan kolom alasan wajib (min. 5 karakter), tombol nonaktif saat proses, pesan error bahasa Indonesia, dan halaman otomatis berganti ke tampilan Dibatalkan setelah sukses (`cancelDeposit` di store mengganti item deposit dari respons API). Bukti: curl 3001 — pembatalan sukses (`status=dibatalkan` + alasan + waktu), percobaan kedua 403 "Hanya pengajuan dengan status Menunggu yang bisa dibatalkan.", alasan kosong 400 "Alasan pembatalan wajib diisi."; `tsc` bersih, lint 0 error, `next build` lulus.
 
 ## [x] BSD-52 · Halaman Pilih Jenis Sampah dan Konfirmasi Setoran
 **Zhafran** · S3 · 8 SP · Prasyarat: BSD-49, BSD-50
