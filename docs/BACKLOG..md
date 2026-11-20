@@ -675,13 +675,15 @@ Catatan penyelesaian (19 Nov 2026): API — `GET /deposits/petugas?status=` khus
 
 # E8 · Penimbangan dan transaksi (Sprint 4)
 
-## [ ] BSD-56 · API pembaruan status oleh petugas
+## [x] BSD-56 · API pembaruan status oleh petugas
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-55
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] Petugas mengubah Menunggu menjadi Diproses hanya untuk unitnya (FR-10, TC-08)
+- [x] Petugas mengubah Menunggu menjadi Diproses hanya untuk unitnya (FR-10, TC-08)
+
+Catatan penyelesaian (19 Nov 2026): `PATCH /deposits/:id/status` (role petugas) — keanggotaan unit dicek via `assertStaffOfUnit`, transisi Menunggu → Diproses memakai `updateMany` dengan `where: { id, status: 'menunggu' }` di dalam `$transaction` bersama penulisan `transaction_events`, sehingga dua petugas yang menekan bersamaan tidak keduanya lolos dan status/event tidak bisa terpisah. Respons memakai `withEstimate()` + data nasabah. FE: `petugasApi.acceptDeposit` dan aksi store mengganti item dari respons; tombol "Terima & Periksa" menonaktifkan tombol saat proses, menampilkan "Memproses…", dan pesan error bahasa Indonesia bila gagal (tidak navigasi sebelum sukses). Bukti: curl 3001 — petugas Sukajadi 403 (bukan unitnya), nasabah 403 (role), Cibeunying 200 → `diproses` + `code` + estimasi berlabel "bukan nilai final", retry 403 "Hanya pengajuan Menunggu yang bisa diproses."; `tsc`/lint/build FE & BE lulus, e2e BE 30/30.
 
 ## [ ] BSD-57 · API input berat aktual
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-56

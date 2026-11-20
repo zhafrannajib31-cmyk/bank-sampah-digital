@@ -19,7 +19,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
 | Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task (BSD-01 s.d. BSD-103) |
-| Task selesai | 38 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–38 (fondasi backend, auth, RBAC, CRUD unit & kategori) selesai 17–19 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4/E5/E7 berjalan |
+| Task selesai | 39 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–38 (fondasi backend, auth, RBAC, CRUD unit & kategori) selesai 17–19 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4/E5/E7 berjalan |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -34,7 +34,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E5 | Data master | 2–3 | 2 / 7 | Sedang berjalan (BSD-37, BSD-38 selesai; BSD-39 CRUD ada, pemilihan harga aktif per tanggal/unit & `createdBy` menyusul) |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 6 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-51, BSD-52, BSD-53, BSD-55 selesai; BSD-54 notifikasi berikutnya) |
-| E8 | Penimbangan dan transaksi | 4 | 0 / 9 | Belum mulai |
+| E8 | Penimbangan dan transaksi | 4 | 1 / 9 | Sedang berjalan (BSD-56 selesai; BSD-57–63 berikutnya) |
 | E9 | Riwayat, saldo, bukti transaksi | 4 | 0 / 5 | Belum mulai |
 | E10 | Dashboard dan laporan | 5 | 0 / 4 | Belum mulai |
 | E11 | Website publik dan edukasi | 5 | 0 / 4 | Belum mulai |
@@ -133,6 +133,7 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 
 | Tanggal | ID Task | Pekerjaan yang Dilakukan | Pelaksana | Hasil / Bukti | Status |
 | --- | --- | --- | --- | --- | --- |
+| 19 Nov 2026 | BSD-56 | `PATCH /deposits/:id/status` (petugas unit) mengubah Menunggu → Diproses dengan `updateMany` bersyarat + event dalam satu `$transaction`; FE tombol "Terima & Periksa" memanggil API, menonaktifkan tombol saat proses, menampilkan error bahasa Indonesia, dan baru pindah halaman setelah sukses. | Zhafran Najib | `be-bsd/src/modules/deposits/`, `fe-bsd/src/features/petugas/{api.ts,store.ts}`, `fe-bsd/src/app/petugas/(flow)/pengajuan/[id]/page.tsx`; curl: Sukajadi 403, nasabah 403, Cibeunying 200 → diproses, retry 403; e2e BE 30/30, `tsc`/lint/build lulus | Selesai |
 | *isi* |  |  |  |  |  |
 
 ### Sprint 5 (usulan 11–22 Jan 2027) – Integrasi, Website, Testing
@@ -175,6 +176,8 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-51][FE] Pembatalan pengajuan oleh nasabah: `cancelDeposit` di `nasabahApi` dan store, panel konfirmasi beralasan pada detail setoran status Menunggu (textarea wajib min. 5 karakter, tombol nonaktif + "Membatalkan…" saat proses, error bahasa Indonesia, fokus kembali ke tombol saat dibatalkan).
 - [BSD-55][BE] `GET /deposits/petugas?status=` khusus role petugas: pengajuan dari `unit_staff` aktif milik user (tanpa penugasan → daftar kosong), terbaru dulu, status tak dikenal 400. Respons memuat `customerName`/`customerPhone`, `estimatedTotal`, `finalTotal` (dari transaksi), `code`, `unitName`, `unitAddress`, dan item per kategori.
 - [BSD-55][FE] `features/petugas/api.ts` + `usePetugasQueue` di `features/petugas/store.ts`: beranda, antrean, dan riwayat petugas membaca `GET /deposits/petugas` dengan state loading/error/muat ulang; label "(simulasi)" dihapus karena data berasal dari server.
+- [BSD-56][BE] `PATCH /deposits/:id/status`: transisi Menunggu → Diproses hanya untuk petugas unit terkait, `updateMany` bersyarat + event di satu `$transaction` (aman saat dua petugas menekan bersamaan), respons memuat estimasi berlabel "bukan nilai final" dan data nasabah.
+- [BSD-56][FE] `petugasApi.acceptDeposit` + aksi store mengganti item dari respons API; tombol "Terima & Periksa" menunggu respons (label "Memproses…", tombol nonaktif, error bahasa Indonesia) dan baru berpindah ke periksa setelah sukses.
 
 **Changed**
 
@@ -202,6 +205,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-53][FE] `isToday` memakai tanggal perangkat (sebelumnya terpaku `SEED_TODAY` 25 Okt 2026) dan label grup "Hari ini" mengikuti tanggal berjalan.
 - [BSD-55][FE] Sumber data layar petugas berpindah dari `localStorage` ke be-bsd: store memakai `useSyncExternalStore` + fetch API (bukan lagi `seedDeposit`), nama unit di beranda/antrean diambil dari data pengajuan, dan tombol "Muat Ulang" memanggil `reload` alih-alih `window.location.reload()`.
 - [BSD-39][DOCS] Klaim "harga aktif dipilih berdasarkan tanggal & unit" dan "`createdBy` dicatat" pada catatan rilis dipersempit: modul harga baru menyediakan CRUD, sedangkan pemilihan harga aktif masih di `deposit.service.ts` dan `createdBy` belum disimpan — BSD-39 tetap terbuka.
+- [BSD-56][BE] `updateStatus` kini menulis status dan `transaction_events` dalam satu transaksi DB dengan pengecekan status di `WHERE` (sebelumnya dua operasi terpisah dan cek status sebelum update), serta mengembalikan respons lengkap seperti endpoint daftar.
 
 **Fixed**
 
@@ -327,4 +331,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.14 | 19 Nov 2026 | Ralat centang BSD-37 & BSD-38 (kode dan changelog sudah ada, heading tertinggal belum dicentang), progres 36/103, E5 2/7; BSD-39 tetap terbuka karena pemilihan harga aktif per tanggal/unit dan `createdBy` belum ada | Zhafran Najib |
 | 1.15 | 19 Nov 2026 | Tambah UI pembatalan pengajuan nasabah (panel alasan di detail setoran status Menunggu, error bahasa Indonesia, tampilan Dibatalkan otomatis), BSD-51 selesai, progres 37/103, E7 5/7 | Zhafran Najib |
 | 1.16 | 19 Nov 2026 | Tambah `GET /deposits/petugas` (unit-scoped) dan alihkan store petugas dari localStorage ke API, BSD-55 selesai, progres 38/103, E7 6/7; ralat catatan rilis BSD-39 (pemilihan harga aktif & `createdBy` belum ada, task tetap terbuka) | Zhafran Najib |
+| 1.17 | 19 Nov 2026 | Selesaikan BSD-56: transisi Menunggu → Diproses atomik & unit-scoped di BE, tombol terima FE menunggu respons API, progres 39/103, E8 1/9 | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |
