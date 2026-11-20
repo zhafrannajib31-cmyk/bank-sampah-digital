@@ -685,14 +685,16 @@ Selesai kalau:
 
 Catatan penyelesaian (19 Nov 2026): `PATCH /deposits/:id/status` (role petugas) — keanggotaan unit dicek via `assertStaffOfUnit`, transisi Menunggu → Diproses memakai `updateMany` dengan `where: { id, status: 'menunggu' }` di dalam `$transaction` bersama penulisan `transaction_events`, sehingga dua petugas yang menekan bersamaan tidak keduanya lolos dan status/event tidak bisa terpisah. Respons memakai `withEstimate()` + data nasabah. FE: `petugasApi.acceptDeposit` dan aksi store mengganti item dari respons; tombol "Terima & Periksa" menonaktifkan tombol saat proses, menampilkan "Memproses…", dan pesan error bahasa Indonesia bila gagal (tidak navigasi sebelum sukses). Bukti: curl 3001 — petugas Sukajadi 403 (bukan unitnya), nasabah 403 (role), Cibeunying 200 → `diproses` + `code` + estimasi berlabel "bukan nilai final", retry 403 "Hanya pengajuan Menunggu yang bisa diproses."; `tsc`/lint/build FE & BE lulus, e2e BE 30/30.
 
-## [ ] BSD-57 · API input berat aktual
+## [x] BSD-57 · API input berat aktual
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-56
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] Berat aktual per kategori tersimpan, petugas dapat mengoreksi kategori (FR-11)
-- [ ] Berat harus angka positif
+- [x] Berat aktual per kategori tersimpan, petugas dapat mengoreksi kategori (FR-11)
+- [x] Berat harus angka positif
+
+Catatan penyelesaian (19 Nov 2026): `PATCH /deposits/:id/weight` memakai `UpdateWeightDto` (class-validator): `itemId`/`categoryId` UUID, `actualWeight` desimal positif maks 3 desimal (nol & negatif ditolak), minimal satu item. Koreksi kategori hanya ke kategori aktif; item wajib milik pengajuan; update berat + kategori dan event ditulis dalam satu `$transaction`. Respons memakai `withEstimate()` + data nasabah. FE: `petugasApi.updateWeight` + `weighDeposit` async, layar timbang memakai harga aktif dari API (bukan mock), `<select>` koreksi jenis per item, tombol "Simpan Berat Aktual" menunggu respons + error bahasa Indonesia, dan ringkasan hasil tidak menampilkan Rp0 palsu sebelum nilai final dihitung server (BSD-59). Bukti: curl 3001 — petugas lain unit 403; berat 0/-1/2.1234/abc → 400; kategori tak dikenal 400; item asing 404; berat 2.75 tersimpan; koreksi PET → Kertas & Kardus → PET berhasil; e2e BE 30/30, tsc/lint/build FE & BE lulus.
 
 ## [ ] BSD-58 · Snapshot harga saat penimbangan
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-57, BSD-39
