@@ -333,34 +333,42 @@ export class DepositService {
     if (!deposit) {
       throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
     }
-    if (deposit.status !== 'menunggu') {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Menunggu yang bisa diproses.' });
-    }
     // Unit membership check
     await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
 
-    const updated = await this.prisma.deposit.update({
-      where: { id },
-      data: {
-        status,
-        processedAt: new Date(),
-      },
+    // Status dicek di dalam WHERE agar dua petugas yang menekan bersamaan tidak sama-sama lolos.
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.deposit.updateMany({
+        where: { id, status: 'menunggu' },
+        data: { status, processedAt: new Date() },
+      });
+      if (count === 0) {
+        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Menunggu yang bisa diproses.' });
+      }
+      await tx.transactionEvent.create({
+        data: {
+          depositId: id,
+          eventType: 'STATUS_UPDATE',
+          oldStatus: 'menunggu',
+          newStatus: 'diproses',
+          actorId: petugasId,
+        },
+      });
     });
-    await this.prisma.transactionEvent.create({
-      data: {
-        depositId: updated.id,
-        eventType: 'STATUS_UPDATE',
-        oldStatus: 'menunggu',
-        newStatus: 'diproses',
-        actorId: petugasId,
-      },
-    });
-    // Re-fetch with items
+
     const withItems = await this.prisma.deposit.findUnique({
-      where: { id: updated.id },
-      include: { items: true },
+      where: { id },
+      include: {
+        items: { include: { category: { select: { name: true, description: true } } } },
+        unit: { select: { id: true, name: true, address: true } },
+        customer: { select: { id: true, name: true, phone: true } },
+      },
     });
-    return this.mapDeposit(withItems!);
+    return {
+      ...(await this.withEstimate(withItems)),
+      customerName: withItems?.customer?.name ?? null,
+      customerPhone: withItems?.customer?.phone ?? null,
+    };
   }
 
   async updateWeight(id: string, petugasId: string, items: { itemId: string; actualWeight: string }[]) {
