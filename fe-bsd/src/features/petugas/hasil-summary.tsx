@@ -19,6 +19,7 @@ export function HasilSummary({
 }) {
   const error = noticeTone === "error";
   const total = deposit.items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0);
+  const hasFinal = deposit.items.every((item) => item.finalValue !== undefined);
 
   return (
     <>
@@ -46,10 +47,10 @@ export function HasilSummary({
               </div>
               <div className="flex flex-col items-end gap-1">
                 <p className="text-[12px] leading-[17px] text-black/80">
-                  {formatRupiah(item.unitPriceSnapshot ?? 0)}/kg
+                  {formatRupiah(item.unitPriceSnapshot ?? item.pricePerKg ?? 0)}/kg
                 </p>
                 <p className="text-[14px] leading-[16.5px] font-medium text-green-dark-active">
-                  {formatRupiah(item.finalValue ?? 0)}
+                  {item.finalValue === undefined ? "Nilai menyusul" : formatRupiah(item.finalValue)}
                 </p>
               </div>
             </li>
@@ -80,9 +81,11 @@ export function HasilSummary({
           <div className="flex flex-col gap-[6px] rounded-[5px] bg-blue-light p-[10px]">
             <p className="text-[12px] leading-[17px] font-medium text-black">Total Nilai</p>
             <p className="text-[16px] leading-[16.5px] font-extrabold text-green-dark-active">
-              {formatRupiah(total)}
+              {hasFinal ? formatRupiah(total) : "—"}
             </p>
-            <p className="text-[12px] leading-[17px] font-light text-black">Dihitung server</p>
+            <p className="text-[12px] leading-[17px] font-light text-black">
+              {hasFinal ? "Dihitung server" : "Dihitung server saat konfirmasi"}
+            </p>
           </div>
         </div>
         <p className="flex items-start gap-2 text-[12px] leading-[17px] font-light text-black">

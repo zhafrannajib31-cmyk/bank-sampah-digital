@@ -1,5 +1,5 @@
 import { request } from "@/lib/api";
-import { toDeposit, type ApiDeposit } from "@/features/nasabah/api";
+import { toDeposit, type ApiCategory, type ApiDeposit } from "@/features/nasabah/api";
 import type { Deposit } from "@/features/nasabah/types";
 
 /** Respons `GET /deposits/petugas`: pengajuan unit + identitas nasabah pengaju. */
@@ -22,4 +22,9 @@ export const petugasApi = {
   deposits: () => request<ApiPetugasDeposit[]>("/deposits/petugas"),
   acceptDeposit: (id: string) =>
     request<ApiPetugasDeposit>(`/deposits/${id}/status`, { method: "PATCH" }),
+  updateWeight: (
+    id: string,
+    items: { itemId: string; actualWeight: string; categoryId?: string }[],
+  ) => request<ApiPetugasDeposit>(`/deposits/${id}/weight`, { method: "PATCH", body: { items } }),
+  categories: () => request<ApiCategory[]>("/waste-categories"),
 };

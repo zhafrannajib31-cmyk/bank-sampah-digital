@@ -39,6 +39,7 @@ export interface DepositItem {
   estimatedWeight: number;
   estimatedValue: number;
   actualWeight?: number;
+  pricePerKg?: number;
   unitPriceSnapshot?: number;
   finalValue?: number;
 }

@@ -127,25 +127,13 @@ export function confirmDeposit(id: string, idempotencyKey: string) {
 }
 
 /**
- * Simpan hasil timbang per jenis. Harga snapshot & nilai per baris kini dihitung server
- * saat konfirmasi; di layar ini hanya pratinjau sampai BSD-57/59 terpasang.
+ * Simpan berat aktual (dan opsional koreksi kategori) ke server; item di state diganti dari respons.
+ * Berat dikirim sebagai string desimal sesuai DTO be-bsd.
  */
-export function weighDeposit(id: string, weights: Record<string, number>) {
-  update(id, (deposit) =>
-    deposit.status !== "diproses"
-      ? deposit
-      : {
-          ...deposit,
-          items: deposit.items.map((item) => {
-            const actual = weights[item.categoryId] ?? item.estimatedWeight;
-            return {
-              ...item,
-              actualWeight: actual,
-              unitPriceSnapshot: item.unitPriceSnapshot,
-              finalValue: Math.round(actual * (item.unitPriceSnapshot ?? 0)),
-            };
-          }),
-          events: [...deposit.events, event(deposit, "weigh", "Berat aktual diinput petugas")],
-        },
-  );
+export async function weighDeposit(
+  id: string,
+  items: { itemId: string; actualWeight: string; categoryId?: string }[],
+) {
+  const updated = toPetugasDeposit(await petugasApi.updateWeight(id, items));
+  update(id, () => updated);
 }

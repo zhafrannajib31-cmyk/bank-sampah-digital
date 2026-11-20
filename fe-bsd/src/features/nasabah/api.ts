@@ -117,6 +117,7 @@ export function toDeposit(deposit: ApiDeposit, transaction?: ApiTransaction): De
       estimatedWeight: Number(item.estimatedWeight),
       estimatedValue: num(item.estimatedValue) ?? 0,
       actualWeight: num(item.actualWeight) ?? undefined,
+      pricePerKg: num(item.pricePerKg) ?? undefined,
       unitPriceSnapshot: num(item.unitPriceSnapshot) ?? undefined,
     })),
     events: [],
