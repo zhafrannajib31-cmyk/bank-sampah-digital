@@ -14,6 +14,7 @@ import { RoleGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/guards/roles.decorator';
 import { DepositService } from './deposit.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
+import { UpdateWeightDto } from './dto/update-weight.dto';
 
 @ApiTags('deposits')
 @Controller('deposits')
@@ -132,7 +133,7 @@ export class DepositController {
   async updateWeight(
     @Param('id') id: string,
     @Req() req: any,
-    @Body() body: { items: { itemId: string; actualWeight: string }[] },
+    @Body() body: UpdateWeightDto,
   ) {
     const petugasId = req.user?.sub;
     if (!petugasId) {

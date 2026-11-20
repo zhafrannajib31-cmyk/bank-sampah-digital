@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
+import { UpdateWeightDto } from './dto/update-weight.dto';
 import { Decimal } from '@prisma/client-runtime-utils';
 import { UnitAccessService } from '../../common/services/unit-access.service';
 
@@ -371,7 +372,7 @@ export class DepositService {
     };
   }
 
-  async updateWeight(id: string, petugasId: string, items: { itemId: string; actualWeight: string }[]) {
+  async updateWeight(id: string, petugasId: string, items: UpdateWeightDto['items']) {
     const deposit = await this.prisma.deposit.findUnique({
       where: { id },
     });
@@ -384,35 +385,63 @@ export class DepositService {
     // Unit membership check
     await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
 
-    // Item harus milik pengajuan ini (cegah ubah item pengajuan lain)
+    // Koreksi kategori oleh petugas hanya boleh ke kategori aktif (FR-11).
     for (const item of items) {
-      const { count } = await this.prisma.depositItem.updateMany({
-        where: { id: item.itemId, depositId: id },
-        data: {
-          actualWeight: new Decimal(item.actualWeight),
-        },
+      if (!item.categoryId) continue;
+      const category = await this.prisma.wasteCategory.findUnique({
+        where: { id: item.categoryId },
+        select: { status: true },
       });
-      if (count === 0) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${item.itemId} tidak ditemukan di pengajuan ini.` });
+      if (!category || category.status !== 'active') {
+        throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Kategori pengganti tidak tersedia.' });
       }
     }
-    // Record event
-    await this.prisma.transactionEvent.create({
-      data: {
-        depositId: id,
-        eventType: 'WEIGHT_UPDATE',
-        oldStatus: 'diproses',
-        newStatus: 'diproses',
-        actorId: petugasId,
-        metadata: { actualWeights: items },
-      },
+
+    await this.prisma.$transaction(async (tx) => {
+      // Item harus milik pengajuan ini (cegah ubah item pengajuan lain).
+      for (const item of items) {
+        const { count } = await tx.depositItem.updateMany({
+          where: { id: item.itemId, depositId: id },
+          data: {
+            actualWeight: new Decimal(item.actualWeight),
+            ...(item.categoryId ? { categoryId: item.categoryId } : {}),
+          },
+        });
+        if (count === 0) {
+          throw new NotFoundException({ code: 'NOT_FOUND', message: `Item ${item.itemId} tidak ditemukan di pengajuan ini.` });
+        }
+      }
+      await tx.transactionEvent.create({
+        data: {
+          depositId: id,
+          eventType: 'WEIGHT_UPDATE',
+          oldStatus: 'diproses',
+          newStatus: 'diproses',
+          actorId: petugasId,
+          metadata: {
+            items: items.map(({ itemId, actualWeight, categoryId }) => ({
+              itemId,
+              actualWeight,
+              categoryId: categoryId ?? null,
+            })),
+          },
+        },
+      });
     });
-    // Re-fetch with items
+
     const withItems = await this.prisma.deposit.findUnique({
       where: { id },
-      include: { items: true },
+      include: {
+        items: { include: { category: { select: { name: true, description: true } } } },
+        unit: { select: { id: true, name: true, address: true } },
+        customer: { select: { id: true, name: true, phone: true } },
+      },
     });
-    return this.mapDeposit(withItems!);
+    return {
+      ...(await this.withEstimate(withItems)),
+      customerName: withItems?.customer?.name ?? null,
+      customerPhone: withItems?.customer?.phone ?? null,
+    };
   }
 
   async snapshotPrice(id: string, petugasId: string, snapshootData: { categoryId: string; unitPriceSnapshot: string }[]) {
