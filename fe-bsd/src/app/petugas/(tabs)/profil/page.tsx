@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Asset } from "@/components/ui";
 import { LogoutButton } from "@/features/auth/logout-button";
 import { dayKey } from "@/features/nasabah/format";
-import { OFFICER_NAME, OFFICER_UNIT, PETUGAS_TODAY } from "@/features/petugas/mock-data";
+import { OFFICER_NAME, OFFICER_UNIT } from "@/features/petugas/mock-data";
 import { usePetugasDeposits } from "@/features/petugas/store";
 import { cn } from "@/lib/cn";
 
@@ -41,10 +41,11 @@ function IconBox({ bg, src }: { bg: string; src: string }) {
 export default function ProfilPetugasPage() {
   const deposits = usePetugasDeposits();
   const [notify, setNotify] = useState(true);
+  const todayKey = dayKey(new Date().toISOString());
   const doneToday = deposits.filter(
     (deposit) =>
       deposit.status === "selesai" &&
-      dayKey(deposit.completedAt ?? deposit.submittedAt) === PETUGAS_TODAY,
+      dayKey(deposit.completedAt ?? deposit.submittedAt) === todayKey,
   ).length;
 
   return (

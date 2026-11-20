@@ -4,11 +4,13 @@ import Link from "next/link";
 import { Asset } from "@/components/ui";
 import { CategoryTile } from "@/features/nasabah/category-tile";
 import { formatRupiah, formatWeight } from "@/features/nasabah/format";
-import { OFFICER_NAME, OFFICER_UNIT } from "@/features/petugas/mock-data";
-import { usePetugasDeposits } from "@/features/petugas/store";
+import { OFFICER_NAME } from "@/features/petugas/mock-data";
+import { usePetugasQueue } from "@/features/petugas/store";
 
 export default function PetugasBerandaPage() {
-  const deposits = usePetugasDeposits();
+  const queue = usePetugasQueue();
+  const deposits = queue.deposits;
+  const unitName = deposits[0]?.unitName ?? "unit Anda";
   const count = (status: string) => deposits.filter((d) => d.status === status).length;
   const waiting = count("menunggu");
   const processing = count("diproses");
@@ -61,11 +63,13 @@ export default function PetugasBerandaPage() {
             <span className="flex flex-col gap-[18px] font-sans text-foreground">
               <span className="flex items-center gap-[6px] text-[12px] leading-[16px] font-medium">
                 <Asset src="/nasabah/icon-wallet-sm.svg" width={14.25} height={13.5} />
-                Antrean {OFFICER_UNIT}
+                Antrean {unitName}
               </span>
               <span className="flex flex-col gap-[10px]">
                 <span className="text-[12px] leading-[16px] font-medium">Pengajuan Menunggu</span>
-                <span className="text-[25px] leading-[30px] font-bold">{waiting} pengajuan</span>
+                <span className="text-[25px] leading-[30px] font-bold">
+                  {queue.isLoading ? "Memuat…" : `${waiting} pengajuan`}
+                </span>
               </span>
             </span>
             <span className="flex flex-col gap-3">
@@ -123,6 +127,22 @@ export default function PetugasBerandaPage() {
             </Link>
           </div>
           <ul className="flex flex-col gap-[13px]">
+            {queue.isLoading ? (
+              <li className="py-6 text-center text-[12px] text-subtle" aria-live="polite">
+                Memuat pengajuan…
+              </li>
+            ) : queue.error ? (
+              <li role="alert" className="rounded-[15px] bg-white px-3 py-4 text-[12px] text-subtle">
+                Antrean gagal dimuat.{" "}
+                <button type="button" onClick={queue.reload} className="font-bold underline">
+                  Coba lagi
+                </button>
+              </li>
+            ) : latest.length === 0 ? (
+              <li className="py-6 text-center text-[12px] text-subtle">
+                Belum ada pengajuan masuk.
+              </li>
+            ) : null}
             {latest.map((deposit) => (
               <li
                 key={deposit.id}
@@ -149,9 +169,6 @@ export default function PetugasBerandaPage() {
               </li>
             ))}
           </ul>
-          <p className="text-center font-jakarta text-[12px] leading-[17px] font-bold text-black/60">
-            Data contoh (simulasi)
-          </p>
         </section>
 
         <div className="flex flex-col gap-5 md:col-start-1 md:row-start-2 lg:col-start-2 lg:row-start-1">

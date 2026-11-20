@@ -1,49 +1,78 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { categories } from "@/features/nasabah/mock-data";
+import { useCallback, useSyncExternalStore } from "react";
+import { userMessage } from "@/lib/api";
 import type { Deposit } from "@/features/nasabah/types";
-import { OFFICER_NAME, petugasDeposits } from "./mock-data";
+import { petugasApi, toPetugasDeposit } from "./api";
 
-// shortcut: data antrean petugas disimpan di localStorage perangkat dan terpisah dari data nasabah;
-// ganti dengan lib/api (BSD-55/56/57) saat endpoint tersedia.
-const KEY = "bsd.petugas.v2";
-const listeners = new Set<() => void>();
-let cache: Deposit[] | null = null;
-
-function read(): Deposit[] {
-  if (cache) return cache;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    cache = Array.isArray(parsed) ? (parsed as Deposit[]) : petugasDeposits;
-  } catch {
-    cache = petugasDeposits;
-  }
-  return cache;
+/**
+ * Antrean unit petugas dari be-bsd (hanya unit tempat ia bertugas aktif).
+ * Aksi tulis masih lokal untuk sesi ini — lihat shortcut di bawah.
+ */
+interface QueueState {
+  deposits: Deposit[];
+  isLoading: boolean;
+  error: string | null;
 }
 
-function write(next: Deposit[]) {
-  cache = next;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    // Penyimpanan diblokir: perubahan tetap berlaku selama halaman terbuka.
-  }
+const EMPTY: Deposit[] = [];
+let state: QueueState = { deposits: EMPTY, isLoading: true, error: null };
+const listeners = new Set<() => void>();
+
+function setState(patch: Partial<QueueState>) {
+  state = { ...state, ...patch };
   listeners.forEach((listener) => listener());
 }
 
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
+async function load() {
+  setState({ isLoading: true, error: null });
+  try {
+    const data = await petugasApi.deposits();
+    setState({ deposits: data.map(toPetugasDeposit) });
+  } catch (cause) {
+    setState({ error: userMessage(cause) });
+  } finally {
+    setState({ isLoading: false });
+  }
+}
 
+let started = false;
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  if (!started) {
+    started = true;
+    void load();
+  }
+  return () => listeners.delete(listener);
+}
+
+/** Data mentah antrean; dipakai layar detail yang hanya butuh daftar. */
 export function usePetugasDeposits(): Deposit[] {
-  return useSyncExternalStore(subscribe, read, () => petugasDeposits);
+  return useSyncExternalStore(
+    subscribe,
+    () => state.deposits,
+    () => EMPTY,
+  );
+}
+
+/** Daftar + status muat untuk layar yang perlu loading/error state. */
+export function usePetugasQueue() {
+  const snapshot = useSyncExternalStore(
+    subscribe,
+    () => state,
+    () => state,
+  );
+  const reload = useCallback(() => {
+    void load();
+  }, []);
+  return { ...snapshot, reload };
 }
 
 function update(id: string, change: (deposit: Deposit) => Deposit) {
-  write(read().map((deposit) => (deposit.id === id ? change(deposit) : deposit)));
+  setState({
+    deposits: state.deposits.map((deposit) => (deposit.id === id ? change(deposit) : deposit)),
+  });
 }
 
 const event = (deposit: Deposit, key: string, title: string, description?: string) => ({
@@ -53,7 +82,8 @@ const event = (deposit: Deposit, key: string, title: string, description?: strin
   description,
 });
 
-/** Terima pengajuan: Menunggu -> Diproses. Idempotent: pengajuan yang sudah bukan Menunggu tidak berubah. */
+// shortcut: aksi petugas (terima/tolak/timbang/konfirmasi) hanya mengubah state di perangkat ini;
+// ganti dengan PATCH/POST be-bsd saat BSD-56/57/58/60 dikerjakan. Muat ulang = kembali ke data server.
 export function acceptDeposit(id: string) {
   update(id, (deposit) =>
     deposit.status !== "menunggu"
@@ -61,16 +91,12 @@ export function acceptDeposit(id: string) {
       : {
           ...deposit,
           status: "diproses",
-          officerName: OFFICER_NAME,
           events: [...deposit.events, event(deposit, "accept", "Pengajuan diterima petugas")],
         },
   );
 }
 
-/**
- * Tolak (Menunggu) atau batalkan (Diproses) setoran: menjadi Dibatalkan dengan alasan wajib,
- * tercatat sebagai event (aturan 8). Idempotent untuk status lain.
- */
+/** Tolak (Menunggu) atau batalkan (Diproses) setoran: Dibatalkan dengan alasan wajib (aturan 8). */
 export function rejectDeposit(id: string, reason: string) {
   const now = new Date().toISOString();
   update(id, (deposit) =>
@@ -81,7 +107,6 @@ export function rejectDeposit(id: string, reason: string) {
           status: "dibatalkan",
           cancellationReason: reason,
           cancelledAt: now,
-          cancelledBy: `Petugas Unit (${OFFICER_NAME})`,
           events: [...deposit.events, event(deposit, "cancel", "Setoran dibatalkan", reason)],
         },
   );
@@ -89,11 +114,7 @@ export function rejectDeposit(id: string, reason: string) {
 
 const confirmedKeys = new Set<string>();
 
-/**
- * Konfirmasi transaksi: Diproses (sudah ditimbang) -> Selesai. Hanya sekali: kunci idempotensi yang sama
- * atau status yang sudah Selesai tidak mengubah apa pun (aman saat retry). Nilai total diambil dari baris
- * penimbangan, bukan dihitung ulang.
- */
+/** Konfirmasi: Diproses (sudah ditimbang) -> Selesai, sekali saja per kunci. */
 export function confirmDeposit(id: string, idempotencyKey: string) {
   if (confirmedKeys.has(idempotencyKey)) return;
   confirmedKeys.add(idempotencyKey);
@@ -112,8 +133,8 @@ export function confirmDeposit(id: string, idempotencyKey: string) {
 }
 
 /**
- * Simpan hasil timbang per jenis. Harga disimpan sebagai snapshot saat penimbangan (aturan 2);
- * nilai per baris dihitung di sini sebagai pengganti server (aturan 1).
+ * Simpan hasil timbang per jenis. Harga snapshot & nilai per baris kini dihitung server
+ * saat konfirmasi; di layar ini hanya pratinjau sampai BSD-57/59 terpasang.
  */
 export function weighDeposit(id: string, weights: Record<string, number>) {
   update(id, (deposit) =>
@@ -122,13 +143,12 @@ export function weighDeposit(id: string, weights: Record<string, number>) {
       : {
           ...deposit,
           items: deposit.items.map((item) => {
-            const price = categories.find((c) => c.id === item.categoryId)?.pricePerKg ?? 0;
             const actual = weights[item.categoryId] ?? item.estimatedWeight;
             return {
               ...item,
               actualWeight: actual,
-              unitPriceSnapshot: price,
-              finalValue: Math.round(actual * price),
+              unitPriceSnapshot: item.unitPriceSnapshot,
+              finalValue: Math.round(actual * (item.unitPriceSnapshot ?? 0)),
             };
           }),
           events: [...deposit.events, event(deposit, "weigh", "Berat aktual diinput petugas")],

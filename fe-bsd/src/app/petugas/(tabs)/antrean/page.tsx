@@ -2,12 +2,12 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Asset } from "@/components/ui";
+import { Asset, ErrorState } from "@/components/ui";
 import { GroupLabel } from "@/features/nasabah/deposit-ui";
+import { formatDateMedium } from "@/features/nasabah/format";
 import type { Deposit } from "@/features/nasabah/types";
-import { OFFICER_UNIT } from "@/features/petugas/mock-data";
 import { QueueEntry } from "@/features/petugas/queue-entry";
-import { usePetugasDeposits } from "@/features/petugas/store";
+import { usePetugasQueue } from "@/features/petugas/store";
 import { cn } from "@/lib/cn";
 
 type Tab = "menunggu" | "diproses" | "selesai";
@@ -28,10 +28,11 @@ export default function AntreanPage() {
   const [tab, setTab] = useState<Tab>(
     tabs.some((item) => item.id === requested) ? (requested as Tab) : "menunggu",
   );
-  const deposits = usePetugasDeposits();
-  const list = deposits
+  const deposits = usePetugasQueue();
+  const list = deposits.deposits
     .filter((deposit) => inTab(deposit, tab))
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  const unitName = deposits.deposits[0]?.unitName ?? "unit Anda";
 
   return (
     <div className="mx-auto w-full max-w-[720px] lg:max-w-[1180px]">
@@ -39,10 +40,10 @@ export default function AntreanPage() {
         <h1 className="text-[22px] leading-[28px] font-bold text-heading">Antrean Pengajuan</h1>
         <p className="text-[12px] leading-[16px] text-[#64766d]">
           {tab === "diproses"
-            ? "Sedang diperiksa dan ditimbang (simulasi)"
+            ? "Sedang diperiksa dan ditimbang"
             : list.length === 0 && tab === "menunggu"
-              ? `Belum ada pengajuan di ${OFFICER_UNIT} (simulasi)`
-              : `Pengajuan nasabah ${OFFICER_UNIT} (simulasi)`}
+              ? `Belum ada pengajuan di ${unitName}`
+              : `Pengajuan nasabah ${unitName}`}
         </p>
         <div
           role="group"
@@ -69,18 +70,28 @@ export default function AntreanPage() {
       </header>
 
       <div className="px-5 pt-[18px]">
-        {list.length === 0 ? (
+        {deposits.isLoading ? (
+          <p className="py-10 text-center text-[12px] text-subtle" aria-live="polite">
+            Memuat pengajuan…
+          </p>
+        ) : deposits.error ? (
+          <ErrorState
+            title="Antrean gagal dimuat"
+            description={deposits.error}
+            onRetry={deposits.reload}
+          />
+        ) : list.length === 0 ? (
           <div className="flex flex-col items-center px-5 pt-[88px] pb-10 text-center">
             <Asset src="/petugas/empty-clock.svg" width={44} height={44} />
             <h2 className="mt-[22px] text-[14px] leading-[18px] font-semibold text-heading">
               Belum ada pengajuan
             </h2>
             <p className="mt-[16px] max-w-[260px] text-[12px] leading-[17px] text-[#64766d]">
-              Pengajuan baru dari nasabah {OFFICER_UNIT} akan muncul di sini.
+              Pengajuan baru dari nasabah {unitName} akan muncul di sini.
             </p>
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={deposits.reload}
               className="mt-[36px] flex h-[49px] w-[180px] items-center justify-center rounded-[28px] border border-[#00ea56] bg-white font-sans text-[16px] font-semibold text-green-dark-active focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               Muat Ulang
@@ -88,7 +99,7 @@ export default function AntreanPage() {
           </div>
         ) : (
           <>
-            <GroupLabel>HARI INI · 16 NOV 2026</GroupLabel>
+            <GroupLabel>{`HARI INI · ${formatDateMedium(new Date().toISOString()).toUpperCase()}`}</GroupLabel>
             <ul className="mt-[10px] grid gap-[10px] md:grid-cols-2 lg:grid-cols-3">
               {list.map((deposit) => (
                 <li key={deposit.id}>
@@ -105,9 +116,6 @@ export default function AntreanPage() {
             </ul>
           </>
         )}
-        <p className="pt-3 pb-4 text-center text-[12px] font-bold text-black/60">
-          Data contoh (simulasi)
-        </p>
       </div>
     </div>
   );

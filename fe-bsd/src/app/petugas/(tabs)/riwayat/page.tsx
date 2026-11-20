@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, ErrorState } from "@/components/ui";
 import { GroupLabel } from "@/features/nasabah/deposit-ui";
 import { dayKey } from "@/features/nasabah/format";
-import { PETUGAS_TODAY } from "@/features/petugas/mock-data";
 import { QueueEntry } from "@/features/petugas/queue-entry";
-import { usePetugasDeposits } from "@/features/petugas/store";
+import { usePetugasQueue } from "@/features/petugas/store";
 
 const pill =
   "flex h-[42px] shrink-0 items-center justify-center rounded-full border px-5 text-[12px] text-heading";
@@ -17,10 +16,11 @@ const dayLabel = (key: string) =>
     .toUpperCase();
 
 export default function RiwayatPage() {
-  const deposits = usePetugasDeposits();
-  const history = deposits
+  const queue = usePetugasQueue();
+  const history = queue.deposits
     .filter((deposit) => deposit.status === "selesai" || deposit.status === "dibatalkan")
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  const todayKey = dayKey(new Date().toISOString());
 
   // Kelompokkan per hari: "Hari ini" lalu tanggal sebelumnya.
   const groups: { key: string; items: typeof history }[] = [];
@@ -35,9 +35,7 @@ export default function RiwayatPage() {
     <div className="mx-auto w-full max-w-[720px] lg:max-w-[1180px]">
       <header className="bg-white px-5 pt-[50px] pb-1">
         <h1 className="text-[22px] leading-[28px] font-bold text-heading">Riwayat Unit</h1>
-        <p className="text-[12px] leading-[16px] text-[#64766d]">
-          Transaksi selesai dan dibatalkan (simulasi)
-        </p>
+        <p className="text-[12px] leading-[16px] text-[#64766d]">Transaksi selesai dan dibatalkan</p>
         <div
           role="group"
           aria-label="Filter status"
@@ -62,7 +60,13 @@ export default function RiwayatPage() {
       </header>
 
       <div className="flex flex-col gap-5 px-5 pt-[18px]">
-        {groups.length === 0 ? (
+        {queue.isLoading ? (
+          <p className="py-10 text-center text-[12px] text-subtle" aria-live="polite">
+            Memuat riwayat…
+          </p>
+        ) : queue.error ? (
+          <ErrorState title="Riwayat gagal dimuat" description={queue.error} onRetry={queue.reload} />
+        ) : groups.length === 0 ? (
           <EmptyState
             title="Belum ada riwayat"
             description="Transaksi yang selesai atau dibatalkan tampil di sini."
@@ -71,7 +75,7 @@ export default function RiwayatPage() {
           groups.map((group) => (
             <section key={group.key} className="flex flex-col gap-[10px]">
               <GroupLabel>
-                {group.key === PETUGAS_TODAY
+                {group.key === todayKey
                   ? `HARI INI · ${dayLabel(group.key)}`
                   : dayLabel(group.key)}
               </GroupLabel>
@@ -85,9 +89,6 @@ export default function RiwayatPage() {
             </section>
           ))
         )}
-        <p className="pb-4 text-center text-[12px] font-bold text-black/60">
-          Data contoh (simulasi)
-        </p>
       </div>
     </div>
   );
