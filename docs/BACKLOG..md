@@ -661,13 +661,15 @@ Prioritas P2.
 Selesai kalau:
 - [ ] Nasabah melihat perubahan status di dalam aplikasi (FR-20)
 
-## [ ] BSD-55 · Daftar pengajuan untuk petugas
+## [x] BSD-55 · Daftar pengajuan untuk petugas
 **Zhafran** · S3 · 5 SP · Prasyarat: BSD-49, BSD-34
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`, `fe-bsd/src/app/petugas/`
 
 Selesai kalau:
-- [ ] Petugas hanya melihat pengajuan unitnya (FR-09, TC-03)
+- [x] Petugas hanya melihat pengajuan unitnya (FR-09, TC-03)
+
+Catatan penyelesaian (19 Nov 2026): API — `GET /deposits/petugas?status=` khusus role petugas, mengambil pengajuan dari `unit_staff` aktif milik user; tanpa penugasan aktif hasilnya daftar kosong (bukan seluruh data), status tak dikenal 400. Respons ikut membawa `customerName`/`customerPhone`, `estimatedTotal`, `finalTotal` (dari transaksi bila sudah selesai), `code`, `unitName`, `unitAddress`, dan item per kategori. UI — `features/petugas/api.ts` + store petugas beralih dari `localStorage` ke API (loading/error/muat ulang di beranda, antrean, riwayat), label "(simulasi)" dihapus karena data sudah nyata. Bukti: curl 3001 — petugas Cibeunying melihat 4 pengajuan unitnya, petugas Sukajadi 0, nasabah 403, `status=ngawur` 400; filter per status 1/0/2/1; `tsc` bersih, lint 0 error, `next build` lulus. Catatan lanjutan: tombol terima/timbang/konfirmasi masih mengubah state lokal (BSD-56–60).
 
 ---
 
