@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -49,6 +50,22 @@ export class DepositController {
       throw new Error('Customer ID not found in token');
     }
     return this.depositService.listDeposits(customerId);
+  }
+
+  // Didaftarkan sebelum `:id` agar "petugas" tidak tertangkap sebagai id.
+  @Get('petugas')
+  @ApiOperation({ summary: 'Daftar pengajuan unit petugas (terbaru dulu)' })
+  @ApiResponse({ status: 200, description: 'Daftar pengajuan unit sendiri' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  @ApiResponse({ status: 403, description: 'Akses ditolak: role petugas diperlukan' })
+  @UseGuards(RoleGuard)
+  @Roles('petugas')
+  async listForUnit(@Req() req: any, @Query('status') status?: string) {
+    const petugasId = req.user?.sub;
+    if (!petugasId) {
+      throw new Error('Petugas ID not found in token');
+    }
+    return this.depositService.listUnitDeposits(petugasId, status);
   }
 
   @Get(':id')

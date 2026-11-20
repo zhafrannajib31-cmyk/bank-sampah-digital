@@ -58,6 +58,48 @@ export class DepositService {
     return Promise.all(deposits.map(deposit => this.withEstimate(deposit)));
   }
 
+  /**
+   * Daftar pengajuan untuk petugas: hanya unit tempat ia bertugas aktif (FR-09, TC-03).
+   * Tanpa penugasan aktif → daftar kosong, bukan seluruh data.
+   */
+  async listUnitDeposits(petugasId: string, status?: string) {
+    const statuses = ['menunggu', 'diproses', 'selesai', 'dibatalkan'];
+    if (status && !statuses.includes(status)) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Status pengajuan tidak dikenal.',
+      });
+    }
+
+    const staff = await this.prisma.unitStaff.findMany({
+      where: { userId: petugasId, status: 'active' },
+      select: { unitId: true },
+    });
+    if (staff.length === 0) return [];
+
+    const deposits = await this.prisma.deposit.findMany({
+      where: {
+        unitId: { in: staff.map((row) => row.unitId) },
+        ...(status ? { status: status as 'menunggu' } : {}),
+      },
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        items: { include: { category: { select: { name: true, description: true } } } },
+        unit: { select: { id: true, name: true, address: true } },
+        customer: { select: { id: true, name: true, phone: true } },
+        transaction: { select: { totalValue: true } },
+      },
+    });
+    return Promise.all(
+      deposits.map(async (deposit) => ({
+        ...(await this.withEstimate(deposit)),
+        customerName: deposit.customer?.name ?? null,
+        customerPhone: deposit.customer?.phone ?? null,
+        finalTotal: deposit.transaction ? deposit.transaction.totalValue.toFixed(2) : null,
+      })),
+    );
+  }
+
   async getDeposit(id: string, customerId: string) {
     const deposit = await this.prisma.deposit.findUnique({
       where: { id },
