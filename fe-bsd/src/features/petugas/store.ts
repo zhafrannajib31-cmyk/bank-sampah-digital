@@ -82,18 +82,12 @@ const event = (deposit: Deposit, key: string, title: string, description?: strin
   description,
 });
 
-// shortcut: aksi petugas (terima/tolak/timbang/konfirmasi) hanya mengubah state di perangkat ini;
-// ganti dengan PATCH/POST be-bsd saat BSD-56/57/58/60 dikerjakan. Muat ulang = kembali ke data server.
-export function acceptDeposit(id: string) {
-  update(id, (deposit) =>
-    deposit.status !== "menunggu"
-      ? deposit
-      : {
-          ...deposit,
-          status: "diproses",
-          events: [...deposit.events, event(deposit, "accept", "Pengajuan diterima petugas")],
-        },
-  );
+// shortcut: aksi petugas (tolak/timbang/konfirmasi) hanya mengubah state di perangkat ini;
+// ganti dengan PATCH/POST be-bsd saat BSD-57/58/60 dikerjakan. Muat ulang = kembali ke data server.
+/** Terima pengajuan: Menunggu -> Diproses di server, item di state diganti dari respons. */
+export async function acceptDeposit(id: string) {
+  const updated = toPetugasDeposit(await petugasApi.acceptDeposit(id));
+  update(id, () => updated);
 }
 
 /** Tolak (Menunggu) atau batalkan (Diproses) setoran: Dibatalkan dengan alasan wajib (aturan 8). */

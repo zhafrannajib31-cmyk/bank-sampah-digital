@@ -12,6 +12,7 @@ import {
   formatWeight,
 } from "@/features/nasabah/format";
 import { acceptDeposit, usePetugasDeposits } from "@/features/petugas/store";
+import { userMessage } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { useOnline } from "@/lib/use-online";
 
@@ -26,6 +27,8 @@ export default function DetailPengajuanPage() {
   const router = useRouter();
   const deposit = usePetugasDeposits().find((candidate) => candidate.id === id);
   const [askReject, setAskReject] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
   const online = useOnline();
 
   if (!deposit) {
@@ -68,14 +71,25 @@ export default function DetailPengajuanPage() {
       value: deposit.customerNote ? `“${deposit.customerNote}”` : "Tidak ada catatan",
     },
   ];
-  const table: [string, string][] = [
-    ...deposit.items.map((item): [string, string] => [
+  const table: [string, string][] = [    ...deposit.items.map((item): [string, string] => [
       `${item.categoryName} · ${formatWeight(item.estimatedWeight)}`,
       `Est. ${formatRupiah(item.estimatedValue)}`,
     ]),
     ["Total estimasi", formatRupiah(deposit.estimatedTotal)],
     ["Status", meta.label],
   ];
+
+  const onAccept = async () => {
+    setAccepting(true);
+    setAcceptError(null);
+    try {
+      await acceptDeposit(deposit.id);
+      router.push(`/petugas/pengajuan/${deposit.id}/periksa`);
+    } catch (cause) {
+      setAcceptError(userMessage(cause));
+      setAccepting(false);
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col bg-canvas shadow-sm">
@@ -166,45 +180,50 @@ export default function DetailPengajuanPage() {
         </div>
       </section>
 
-      <div className="sticky bottom-0 mt-auto flex items-center gap-[10px] border-t-[0.5px] border-line bg-white px-5 pt-[14px] pb-[21px]">
-        {waiting ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setAskReject(true)}
-              className="flex h-[50px] w-24 shrink-0 items-center justify-center rounded-[30px] border border-[#ff575d] bg-white text-[14px] font-semibold text-[#d92116] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      <div className="sticky bottom-0 mt-auto flex flex-col gap-2 border-t-[0.5px] border-line bg-white px-5 pt-[14px] pb-[21px]">
+        {acceptError ? (
+          <p role="alert" className="text-[12px] leading-[17px] font-semibold text-[#d92116]">
+            {acceptError}
+          </p>
+        ) : null}
+        <div className="flex items-center gap-[10px]">
+          {waiting ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setAskReject(true)}
+                disabled={accepting}
+                className="flex h-[50px] w-24 shrink-0 items-center justify-center rounded-[30px] border border-[#ff575d] bg-white text-[14px] font-semibold text-[#d92116] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Tolak
+              </button>
+              <button
+                type="button"
+                disabled={pickup || !online || accepting}
+                title={pickup ? "Penjemputan belum didukung" : online ? undefined : "Sedang offline"}
+                onClick={onAccept}
+                className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {accepting ? "Memproses…" : "Terima & Periksa"}
+              </button>
+            </>
+          ) : (
+            <Link
+              href={
+                deposit.status === "diproses"
+                  ? `/petugas/pengajuan/${deposit.id}/${
+                      deposit.items.some((item) => item.actualWeight === undefined)
+                        ? "periksa"
+                        : "hasil"
+                    }`
+                  : "/petugas/antrean"
+              }
+              className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
             >
-              Tolak
-            </button>
-            <button
-              type="button"
-              disabled={pickup || !online}
-              title={pickup ? "Penjemputan belum didukung" : online ? undefined : "Sedang offline"}
-              onClick={() => {
-                acceptDeposit(deposit.id);
-                router.push(`/petugas/pengajuan/${deposit.id}/periksa`);
-              }}
-              className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Terima &amp; Periksa
-            </button>
-          </>
-        ) : (
-          <Link
-            href={
-              deposit.status === "diproses"
-                ? `/petugas/pengajuan/${deposit.id}/${
-                    deposit.items.some((item) => item.actualWeight === undefined)
-                      ? "periksa"
-                      : "hasil"
-                  }`
-                : "/petugas/antrean"
-            }
-            className="flex h-[53px] min-w-0 flex-1 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-foreground shadow-[0_7px_14px_rgba(0,200,75,0.19)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none"
-          >
-            {deposit.status === "diproses" ? "Lanjutkan Proses" : "Kembali ke Antrean"}
-          </Link>
-        )}
+              {deposit.status === "diproses" ? "Lanjutkan Proses" : "Kembali ke Antrean"}
+            </Link>
+          )}
+        </div>
       </div>
 
       <ConfirmDialog

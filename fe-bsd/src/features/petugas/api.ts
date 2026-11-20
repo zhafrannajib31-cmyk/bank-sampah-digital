@@ -20,4 +20,6 @@ export function toPetugasDeposit(deposit: ApiPetugasDeposit): Deposit {
 
 export const petugasApi = {
   deposits: () => request<ApiPetugasDeposit[]>("/deposits/petugas"),
+  acceptDeposit: (id: string) =>
+    request<ApiPetugasDeposit>(`/deposits/${id}/status`, { method: "PATCH" }),
 };
