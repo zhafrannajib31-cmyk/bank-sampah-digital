@@ -743,7 +743,7 @@ Selesai kalau:
 
 Catatan penyelesaian (22 Nov 2026): seluruh transisi status pengajuan (Menunggu → Diproses, → Selesai, pembatalan sebelum/sesudah konfirmasi) tercatat di `transaction_events` dengan `old_status`, `new_status`, `actor_id`, `reason` (pembatalan), dan `created_at` (default DB). Pembatalan kini menulis status + event dalam satu `$transaction` dengan `updateMany` bersyarat, dan alasan disimpan di kolom `reason` (sebelumnya hanya di `metadata` untuk pembatalan pasca-konfirmasi, dan event ditulis terpisah). Test `test/transaction-events.e2e-spec.ts` memverifikasi field tersebut untuk pembatalan, pembatalan pasca-konfirmasi, dan transisi Diproses; bukti DB: baris `CANCELLED | menunggu | dibatalkan | <nasabah> | Uji audit BSD-61 | 2026-11-22T08:48:16Z`. e2e 40/40, unit 5/5, tsc/lint/build lulus.
 
-## [ ] BSD-62 · Pembatalan dan koreksi pasca-konfirmasi
+## [x] BSD-62 · Pembatalan dan koreksi pasca-konfirmasi
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-60, BSD-61
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`
@@ -751,8 +751,10 @@ Boleh sentuh: `be-bsd/src/modules/transactions/`
 Prioritas P1.
 
 Selesai kalau:
-- [ ] Alasan wajib diisi
-- [ ] Koreksi meninggalkan jejak dan memperbarui saldo satu kali
+- [x] Alasan wajib diisi
+- [x] Koreksi meninggalkan jejak dan memperbarui saldo satu kali
+
+Catatan penyelesaian (22 Nov 2026): endpoint `POST /transactions/:id/cancel` dan `POST /transactions/:id/correct` hanya untuk Admin (kebijakan BSD-13/BPMN). Keduanya memakai `updateMany where status = active`, sehingga aksi kedua ditolak 409 `DUPLICATE`; alasan divalidasi DTO (wajib, minimal satu karakter bukan spasi). Status transaksi, status pengajuan (untuk batal), item/line total (untuk koreksi), `transaction_events` (status lama/baru, aktor, alasan, nilai lama di `metadata`), dan saldo ditulis dalam satu `$transaction`. Saldo dihitung ulang dari `SUM(total_value)` transaksi `active`/`corrected`, jadi tidak bisa bertambah dua kali. Bukti curl 3001: batal tx 5000 → saldo 27000,00; koreksi tx 21000 → 24000 dengan saldo 30000,00; retry keduanya 409; body tanpa alasan 400 `VALIDATION_ERROR`. Test `test/transaction-actions.e2e-spec.ts` 7 kasus; e2e 47/47, unit 5/5, tsc/lint/build lulus.
 
 ## [ ] BSD-63 · UI penimbangan dan konfirmasi transaksi
 **Zhafran** · S4 · 8 SP · Prasyarat: BSD-57, BSD-60
