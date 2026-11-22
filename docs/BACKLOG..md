@@ -733,13 +733,15 @@ Selesai kalau:
 
 Catatan penyelesaian (22 Nov 2026): `POST /deposits/:id/confirm` (role petugas, cek unit) kini melakukan cek kunci idempotensi, `updateMany` bersyarat `status = diproses`, pembuatan transaksi, dan `transaction_events` di **satu `$transaction`**. Retry dengan kunci sama mengembalikan transaksi lama tanpa penulisan; konfirmasi kedua dengan kunci lain ditolak 409 `DUPLICATE` (baik saat status sudah Selesai maupun saat dua permintaan bersamaan, lewat `WHERE status` + constraint unik). Body divalidasi `ConfirmTransactionDto` (kunci wajib, teks, maks 100 karakter). Bukti: curl 3001 — retry kunci sama id transaksi identik, kunci lain 409, nasabah 403, kunci kosong 400; test unit/mock 7 kasus di `test/deposit-confirm.e2e-spec.ts` lulus (total 37 e2e), unit 5/5, tsc/lint/build lulus.
 
-## [ ] BSD-61 · Pencatatan transaction_events
+## [x] BSD-61 · Pencatatan transaction_events
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-56
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`
 
 Selesai kalau:
-- [ ] Setiap perubahan status mencatat status lama, baru, pelaku, dan waktu
+- [x] Setiap perubahan status mencatat status lama, baru, pelaku, dan waktu
+
+Catatan penyelesaian (22 Nov 2026): seluruh transisi status pengajuan (Menunggu → Diproses, → Selesai, pembatalan sebelum/sesudah konfirmasi) tercatat di `transaction_events` dengan `old_status`, `new_status`, `actor_id`, `reason` (pembatalan), dan `created_at` (default DB). Pembatalan kini menulis status + event dalam satu `$transaction` dengan `updateMany` bersyarat, dan alasan disimpan di kolom `reason` (sebelumnya hanya di `metadata` untuk pembatalan pasca-konfirmasi, dan event ditulis terpisah). Test `test/transaction-events.e2e-spec.ts` memverifikasi field tersebut untuk pembatalan, pembatalan pasca-konfirmasi, dan transisi Diproses; bukti DB: baris `CANCELLED | menunggu | dibatalkan | <nasabah> | Uji audit BSD-61 | 2026-11-22T08:48:16Z`. e2e 40/40, unit 5/5, tsc/lint/build lulus.
 
 ## [ ] BSD-62 · Pembatalan dan koreksi pasca-konfirmasi
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-60, BSD-61

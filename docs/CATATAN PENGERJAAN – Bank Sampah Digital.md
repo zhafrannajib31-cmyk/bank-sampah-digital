@@ -19,7 +19,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
 | Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task MVP (BSD-01 s.d. BSD-103); 10 task penjemputan Fase 2 (BSD-104–113) dihitung terpisah |
-| Task selesai | 45 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent) selesai 19–22 Nov 2026 — E3 selesai, E4/E5/E7/E8 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103 |
+| Task selesai | 46 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status) selesai 19–22 Nov 2026 — E3 selesai, E4/E5/E7/E8 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103 |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -34,7 +34,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E5 | Data master | 2–3 | 3 / 7 | Sedang berjalan (BSD-37, BSD-38, BSD-39 selesai; BSD-40/41 berikutnya) |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 6 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-51, BSD-52, BSD-53, BSD-55 selesai; BSD-54 notifikasi berikutnya) |
-| E8 | Penimbangan dan transaksi | 4 | 5 / 9 | Sedang berjalan (BSD-56, BSD-57, BSD-58, BSD-59, BSD-60 selesai; BSD-61–63 berikutnya) |
+| E8 | Penimbangan dan transaksi | 4 | 6 / 9 | Sedang berjalan (BSD-56, BSD-57, BSD-58, BSD-59, BSD-60, BSD-61 selesai; BSD-62/63 berikutnya) |
 | E9 | Riwayat, saldo, bukti transaksi | 4 | 0 / 5 | Belum mulai |
 | E10 | Dashboard dan laporan | 5 | 0 / 4 | Belum mulai |
 | E11 | Website publik dan edukasi | 5 | 0 / 4 | Belum mulai |
@@ -139,6 +139,7 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 | 22 Nov 2026 | BSD-39 | Pemilihan harga aktif per tanggal/unit dipindah ke modul harga (`resolveActive`) dan `createdBy` diisi dari token pada `POST`/`PATCH /waste-prices`; dua kriteria selesai yang tertunda sejak 19 Nov 2026 kini terpenuhi. | Zhafran Najib | `be-bsd/src/modules/waste-prices/{waste-prices.service.ts,waste-prices.controller.ts}`; curl: `PATCH /waste-prices/:id` mengisi `createdBy` admin dan tampil di `GET`; e2e BE 30/30, lint/build lulus | Selesai |
 | 22 Nov 2026 | BSD-59 | Kalkulasi nilai server memakai satu fungsi Decimal: `lineTotal` disimpan di `deposit_items` saat penimbangan, total = jumlah item, dipakai bersama oleh `/value` dan konfirmasi; test unit presisi ditambahkan. | Zhafran Najib | `be-bsd/src/modules/deposits/{deposit-totals.ts,deposit-totals.spec.ts,deposit.service.ts}`; curl: 2,25 × 4000 = 9000 + 1,5 × 8000 = 12000, `/value` 21000,00 & berat 3,750, konfirmasi + retry key sama → id transaksi sama; unit test 5/5, e2e 30/30, tsc/lint/build lulus | Selesai |
 | 22 Nov 2026 | BSD-60 | Konfirmasi transaksi diperketat: cek kunci, transisi status bersyarat, pembuatan transaksi, dan event berada dalam satu `$transaction`; retry kunci sama mengembalikan transaksi lama, kunci lain/duplikat ditolak 409. DTO kunci ditambahkan dan 7 test kasus konfirmasi ditulis. | Zhafran Najib | `be-bsd/src/modules/deposits/{deposit.service.ts,deposit.controller.ts,dto/confirm-transaction.dto.ts}`, `be-bsd/test/deposit-confirm.e2e-spec.ts`; curl: retry sama id identik, kunci lain 409, nasabah 403, kunci kosong 400; e2e 37/37, unit 5/5, tsc/lint/build lulus | Selesai |
+| 22 Nov 2026 | BSD-61 | Jejak perubahan status dipastikan lengkap: pembatalan sebelum/sesudah konfirmasi kini menulis status + `transaction_events` atomik dengan alasan di kolom `reason`, dan test menverifikasi field status lama/baru/pelaku/waktu untuk setiap transisi. | Zhafran Najib | `be-bsd/src/modules/deposits/deposit.service.ts`, `be-bsd/test/transaction-events.e2e-spec.ts`; curl + query DB: `CANCELLED | menunggu | dibatalkan | <nasabah> | Uji audit BSD-61 | created_at` terisi; e2e 40/40, unit 5/5, tsc/lint/build lulus | Selesai |
 | *isi* |  |  |  |  |  |
 
 ### Sprint 5 (usulan 11–22 Jan 2027) – Integrasi, Website, Testing
@@ -188,6 +189,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-58][BE] `PATCH /deposits/:id/weight` mengisi `unitPriceSnapshot` dari harga aktif (server), memvalidasi kategori pengganti aktif, dan menulis berat + kategori + snapshot + event `WEIGHT_UPDATE` dalam satu `$transaction`. `assertWeighed()` menolak konfirmasi/nilai (400) bila masih ada item tanpa berat aktual atau snapshot.
 - [BSD-59][BE] `deposit-totals.ts`: `lineTotalOf()` dan `depositTotals()` memakai `Decimal` untuk `line_total = berat aktual × snapshot` dan total keseluruhan; `deposit_items.lineTotal` kini tersimpan saat penimbangan dan ikut direspons item. Unit test presisi/penjumlahan ditambahkan.
 - [BSD-60][BE] `ConfirmTransactionDto` memvalidasi `idempotencyKey` (wajib, teks, maks 100 karakter); test konfirmasi dengan provider tiruan mencakup atomisitas, replay kunci sama, duplikat kunci lain, misuse kunci lintas pengajuan, RBAC unit, dan status prasyarat.
+- [BSD-61][BE] Test `transaction-events.e2e-spec.ts` memverifikasi pencatatan status lama/baru/pelaku/alasan untuk pembatalan, pembatalan pasca-konfirmasi, dan transisi Menunggu → Diproses.
 
 **Changed**
 
@@ -221,6 +223,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-58][BE] Snapshot harga tidak lagi bisa dikirim klien: `snapshotPrice()` dan route `PATCH /deposits/:id/snapshoot` dihapus; snapshot hanya lahir dari penimbangan petugas dan dihitung ulang setiap penyimpanan timbangan (transaksi baru final saat konfirmasi).
 - [BSD-59][BE] Tiga loop kalkulasi yang duplikat (`calculateValue`, `calculateConfirmedValue`, `confirmTransaction`) diganti satu pemanggilan `depositTotals()`, sehingga nilai yang ditampilkan dan nilai yang disimpan tidak bisa berbeda.
 - [BSD-60][BE] Konfirmasi dipindah seluruhnya ke dalam `$transaction`: kunci dicek ulang di dalam transaksi, status diubah lewat `updateMany` bersyarat sebelum transaksi dibuat, dan event ditulis setelahnya; sebelumnya kunci dicek di luar transaksi dan status diubah dengan `update` biasa setelah transaksi dibuat.
+- [BSD-61][BE] Pembatalan (sebelum dan sesudah konfirmasi) kini memperbarui status dan menulis event dalam satu `$transaction` dengan `updateMany` bersyarat; alasan pembatalan pasca-konfirmasi dipindah dari `metadata` ke kolom `reason` yang memang tersedia di skema.
 
 **Fixed**
 
@@ -354,4 +357,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.19 | 22 Nov 2026 | Selesaikan BSD-58 (snapshot harga dihitung server saat penimbangan, endpoint snapshot dari klien dihapus, konfirmasi/nilai menolak item belum ditimbang) dan BSD-39 (harga aktif per tanggal/unit di modul harga, `createdBy` dicatat), progres 42/103, E5 3/7, E8 3/9 | Zhafran Najib |
 | 1.20 | 22 Nov 2026 | Selesaikan BSD-59: `line_total` tersimpan dan dihitung Decimal, satu fungsi kalkulasi untuk `/value` dan konfirmasi, unit test presisi ditambahkan, progres 43/103, E8 4/9 | Zhafran Najib |
 | 1.21 | 22 Nov 2026 | Selesaikan BSD-60: konfirmasi atomik/idempotent diperkuat (cek kunci + `updateMany` bersyarat dalam satu transaksi), DTO kunci, test 7 kasus, ralat hitungan progres (BSD-64 ikut terhitung); progres 45/103, E8 5/9 | Zhafran Najib |
+| 1.22 | 22 Nov 2026 | Selesaikan BSD-61: jejak status lama/baru/pelaku/waktu terverifikasi, pembatalan atomik dengan alasan di kolom `reason`, test 3 kasus ditambahkan; progres 46/103, E8 6/9 | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |
