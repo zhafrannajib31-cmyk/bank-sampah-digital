@@ -780,13 +780,15 @@ Catatan penyelesaian (22 Nov 2026): layar hasil/konfirmasi memanggil `POST /depo
 
 # E9 · Riwayat, saldo, dan bukti transaksi (Sprint 4)
 
-## [ ] BSD-65 · API riwayat dan detail transaksi
+## [x] BSD-65 · API riwayat dan detail transaksi
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-60
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`
 
 Selesai kalau:
-- [ ] Nasabah hanya melihat transaksi miliknya (FR-14, TC-07)
+- [x] Nasabah hanya melihat transaksi miliknya (FR-14, TC-07)
+
+Catatan penyelesaian (23 Nov 2026): `GET /transactions` dan `GET /transactions/:id` sudah ada sejak BSD-31, tetapi detail belum memenuhi AC-12.2/12.4: field `finalValue` tidak pernah diisi (kolom sebenarnya `lineTotal`), nama unit tidak ikut terpetakan karena `unit` hanya di-include di dalam `deposit`, dan alasan pembatalan tidak tersedia. `getTransactionDetail` sekarang meng-include `unit` dan `events` milik transaksi, memetakan `lineTotal`, alamat unit, `completedAt`/`cancellationReason` pengajuan, serta riwayat event (jenis, alasan, waktu). Filter kepemilikan tetap dari token (`customerId` di `where` untuk daftar, cek 403 untuk detail). Test `test/transaction-history.e2e-spec.ts` 5 kasus; e2e 52/52, unit 5/5, tsc/lint/build lulus. Bukti curl 3001: nasabah A melihat 5 transaksi miliknya; detail memuat unit "BSDU Simulasi Cibeunying", baris 9000/12000, alasan batal "Uji batal BSD-62"; nasabah baru (tidak punya transaksi) melihat `[]` dan detail milik nasabah A ditolak 403; petugas ditolak 403.
 
 ## [ ] BSD-66 · Saldo atau nilai akumulatif
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-60
