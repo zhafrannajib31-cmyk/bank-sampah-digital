@@ -116,6 +116,18 @@ export class TransactionService {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
       include: {
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            serviceStatus: true,
+          },
+        },
+        events: {
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, eventType: true, reason: true, createdAt: true },
+        },
         deposit: {
           include: {
             items: {
@@ -126,14 +138,6 @@ export class TransactionService {
                     description: true,
                   },
                 },
-              },
-            },
-            unit: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-                serviceStatus: true,
               },
             },
           },
@@ -290,24 +294,33 @@ export class TransactionService {
       depositId: transaction.depositId,
       unitId: transaction.unitId,
       unitName: transaction.unit?.name,
+      unitAddress: transaction.unit?.address,
       totalWeight: transaction.totalWeight,
       totalValue: transaction.totalValue,
       confirmedBy: transaction.confirmedBy,
       confirmedAt: transaction.confirmedAt,
       status: transaction.status,
       createdAt: transaction.createdAt,
+      events: transaction.events?.map((event: any) => ({
+        eventType: event.eventType,
+        reason: event.reason,
+        createdAt: event.createdAt,
+      })) ?? [],
       deposit: {
         id: transaction.deposit.id,
         status: transaction.deposit.status,
         submittedAt: transaction.deposit.submittedAt,
+        completedAt: transaction.deposit.completedAt,
+        cancellationReason: transaction.deposit.cancellationReason,
         items: transaction.deposit.items.map((item: any) => ({
+          id: item.id,
           categoryId: item.categoryId,
           categoryName: item.category?.name,
           categoryDescription: item.category?.description,
           estimatedWeight: item.estimatedWeight,
           actualWeight: item.actualWeight,
           unitPriceSnapshot: item.unitPriceSnapshot,
-          finalValue: item.finalValue,
+          lineTotal: item.lineTotal,
           inspectionStatus: item.inspectionStatus,
         })),
       },
