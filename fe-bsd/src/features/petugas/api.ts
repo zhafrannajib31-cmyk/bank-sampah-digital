@@ -18,6 +18,28 @@ export function toPetugasDeposit(deposit: ApiPetugasDeposit): Deposit {
   };
 }
 
+/** Respons `POST /deposits/:id/value`: nilai final dihitung be-bsd. */
+export interface ApiDepositValue {
+  totalWeight: string;
+  totalValue: string;
+  items: {
+    id: string;
+    categoryId: string;
+    actualWeight: string;
+    unitPriceSnapshot: string;
+    lineTotal: string;
+  }[];
+}
+
+/** Respons `POST /deposits/:id/confirm`. */
+export interface ApiConfirmedTransaction {
+  id: string;
+  depositId: string;
+  totalValue: string;
+  confirmedAt: string;
+  status: string;
+}
+
 export const petugasApi = {
   deposits: () => request<ApiPetugasDeposit[]>("/deposits/petugas"),
   acceptDeposit: (id: string) =>
@@ -26,5 +48,12 @@ export const petugasApi = {
     id: string,
     items: { itemId: string; actualWeight: string; categoryId?: string }[],
   ) => request<ApiPetugasDeposit>(`/deposits/${id}/weight`, { method: "PATCH", body: { items } }),
+  value: (id: string) => request<ApiDepositValue>(`/deposits/${id}/value`, { method: "POST" }),
+  confirm: (id: string, idempotencyKey: string) =>
+    request<ApiConfirmedTransaction>(`/deposits/${id}/confirm`, {
+      method: "POST",
+      body: { idempotencyKey },
+      idempotencyKey,
+    }),
   categories: () => request<ApiCategory[]>("/waste-categories"),
 };

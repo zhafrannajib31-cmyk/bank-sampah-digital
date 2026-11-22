@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { ErrorState, StepActions, StepHeader } from "@/components/ui";
 import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
 import { HasilSummary } from "@/features/petugas/hasil-summary";
-import { usePetugasDeposits } from "@/features/petugas/store";
+import { useDepositValue, usePetugasDeposits } from "@/features/petugas/store";
 
 export default function KonfirmasiHasilPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +13,7 @@ export default function KonfirmasiHasilPage() {
   const weighed =
     deposit?.status === "diproses" &&
     deposit.items.every((item) => item.actualWeight !== undefined);
+  const value = useDepositValue(id, weighed);
 
   if (!deposit || !weighed) {
     return (
@@ -40,6 +41,9 @@ export default function KonfirmasiHasilPage() {
         deposit={deposit}
         noticeTitle="Langkah Berikutnya"
         noticeText="Minta nasabah menampilkan QR transaksi, lalu pindai untuk memvalidasi."
+        valueLoading={deposit.finalTotal === undefined}
+        valueError={value.error}
+        onRetryValue={value.retry}
       />
       <StepActions>
         <Link

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { userMessage } from "@/lib/api";
 import type { Deposit } from "@/features/nasabah/types";
-import { petugasApi, toPetugasDeposit } from "./api";
+import { petugasApi, toPetugasDeposit, type ApiDepositValue } from "./api";
 
 /**
  * Antrean unit petugas dari be-bsd (hanya unit tempat ia bertugas aktif).
@@ -82,8 +82,8 @@ const event = (deposit: Deposit, key: string, title: string, description?: strin
   description,
 });
 
-// shortcut: aksi petugas (tolak/timbang/konfirmasi) hanya mengubah state di perangkat ini;
-// ganti dengan PATCH/POST be-bsd saat BSD-57/58/60 dikerjakan. Muat ulang = kembali ke data server.
+// shortcut: penolakan pengajuan masih mengubah state lokal saja; terima, timbang, nilai, dan konfirmasi
+// sudah memakai be-bsd. Muat ulang halaman mengembalikan data penolakan ke data server.
 /** Terima pengajuan: Menunggu -> Diproses di server, item di state diganti dari respons. */
 export async function acceptDeposit(id: string) {
   const updated = toPetugasDeposit(await petugasApi.acceptDeposit(id));
@@ -106,24 +106,65 @@ export function rejectDeposit(id: string, reason: string) {
   );
 }
 
-const confirmedKeys = new Set<string>();
+/** Salin nilai dari respons server ke state; FE tidak boleh menghitungnya sendiri. */
+function applyValue(deposit: Deposit, value: ApiDepositValue): Deposit {
+  const lines = new Map(value.items.map((item) => [item.id, item]));
+  return {
+    ...deposit,
+    finalTotal: Number(value.totalValue),
+    items: deposit.items.map((item) => {
+      const line = lines.get(item.id);
+      return line
+        ? {
+            ...item,
+            actualWeight: Number(line.actualWeight),
+            unitPriceSnapshot: Number(line.unitPriceSnapshot),
+            finalValue: Number(line.lineTotal),
+          }
+        : item;
+    }),
+  };
+}
 
-/** Konfirmasi: Diproses (sudah ditimbang) -> Selesai, sekali saja per kunci. */
-export function confirmDeposit(id: string, idempotencyKey: string) {
-  if (confirmedKeys.has(idempotencyKey)) return;
-  confirmedKeys.add(idempotencyKey);
-  const now = new Date().toISOString();
-  update(id, (deposit) =>
-    deposit.status !== "diproses" || deposit.items.some((item) => item.finalValue === undefined)
-      ? deposit
-      : {
-          ...deposit,
-          status: "selesai",
-          finalTotal: deposit.items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0),
-          completedAt: now,
-          events: [...deposit.events, event(deposit, "confirm", "Transaksi dikonfirmasi petugas")],
-        },
-  );
+/** Ambil nilai hasil timbang dari `POST /deposits/:id/value`. */
+export async function loadDepositValue(id: string) {
+  const value = await petugasApi.value(id);
+  update(id, (deposit) => applyValue(deposit, value));
+}
+
+/** Ambil nilai saat ringkasan ditampilkan; `error` memberi tombol retry yang aman. */
+export function useDepositValue(id: string, enabled: boolean) {
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    void loadDepositValue(id).catch((cause) => {
+      if (active) setError(userMessage(cause));
+    });
+    return () => {
+      active = false;
+    };
+  }, [id, enabled, attempt]);
+
+  const retry = () => {
+    setError(null);
+    setAttempt((value) => value + 1);
+  };
+  return { error, retry };
+}
+
+/** Konfirmasi Diproses -> Selesai di server; kunci idempotensi sama dipakai saat retry. */
+export async function confirmDeposit(id: string, idempotencyKey: string) {
+  const confirmed = await petugasApi.confirm(id, idempotencyKey);
+  update(id, (deposit) => ({
+    ...deposit,
+    status: "selesai",
+    finalTotal: Number(confirmed.totalValue),
+    completedAt: confirmed.confirmedAt,
+    events: [...deposit.events, event(deposit, "confirm", "Transaksi dikonfirmasi petugas")],
+  }));
 }
 
 /**

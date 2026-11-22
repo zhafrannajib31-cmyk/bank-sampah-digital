@@ -5,21 +5,27 @@ import { depositActualWeight } from "@/features/nasabah/deposit-ui";
 import { formatDateMedium, formatRupiah, formatWeight } from "@/features/nasabah/format";
 import type { Deposit } from "@/features/nasabah/types";
 
-/** Ringkasan hasil timbang (Konfirmasi Hasil dan Konfirmasi Transaksi). Nilai berasal dari catatan penimbangan, bukan dihitung di layar. */
+/** Ringkasan hasil timbang (Konfirmasi Hasil dan Konfirmasi Transaksi). Nilai berasal dari respons API, bukan dihitung di layar. */
 export function HasilSummary({
   deposit,
   noticeTitle,
   noticeText,
   noticeTone = "info",
+  valueLoading = false,
+  valueError = null,
+  onRetryValue,
 }: {
   deposit: Deposit;
   noticeTitle: string;
   noticeText: ReactNode;
   noticeTone?: "info" | "error";
+  valueLoading?: boolean;
+  valueError?: string | null;
+  onRetryValue?: () => void;
 }) {
   const error = noticeTone === "error";
-  const total = deposit.items.reduce((sum, item) => sum + (item.finalValue ?? 0), 0);
-  const hasFinal = deposit.items.every((item) => item.finalValue !== undefined);
+  const total = deposit.finalTotal ?? 0;
+  const hasFinal = deposit.finalTotal !== undefined;
 
   return (
     <>
@@ -95,6 +101,28 @@ export function HasilSummary({
           Angka di atas hasil timbangan petugas, bukan estimasi.
         </p>
       </section>
+
+      {valueLoading ? (
+        <p role="status" className="text-[12px] leading-[17px] text-black/70">
+          Mengambil nilai dari server…
+        </p>
+      ) : null}
+      {valueError ? (
+        <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-[#fee2e2] p-3">
+          <p className="text-[12px] leading-[17px] font-semibold text-[#991b1b]">
+            Nilai gagal dimuat: {valueError}
+          </p>
+          {onRetryValue ? (
+            <button
+              type="button"
+              onClick={onRetryValue}
+              className="w-fit rounded-[10px] border border-[#991b1b] px-3 py-1 text-[12px] font-semibold text-[#991b1b] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              Coba Lagi
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <section
         role={error ? "alert" : "status"}

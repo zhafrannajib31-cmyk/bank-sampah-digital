@@ -6,8 +6,9 @@ import { useState } from "react";
 import { ConfirmDialog, ErrorState, StepActions, StepHeader } from "@/components/ui";
 import { StepNext, StepScreen } from "@/features/nasabah/step-screen";
 import { HasilSummary } from "@/features/petugas/hasil-summary";
-import { confirmDeposit, usePetugasDeposits } from "@/features/petugas/store";
-import { newIdempotencyKey } from "@/lib/api";
+import { confirmDeposit, useDepositValue, usePetugasDeposits } from "@/features/petugas/store";
+import { newIdempotencyKey, userMessage } from "@/lib/api";
+import { useOnline } from "@/lib/use-online";
 
 export default function KonfirmasiTransaksiPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +19,12 @@ export default function KonfirmasiTransaksiPage() {
   const [processing, setProcessing] = useState(false);
   const [askCancel, setAskCancel] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const online = useOnline();
   const weighed =
     deposit?.status === "diproses" &&
     deposit.items.every((item) => item.actualWeight !== undefined);
+  const value = useDepositValue(id, weighed);
 
   // Setelah konfirmasi status berubah ke Selesai; jangan tampilkan galat saat berpindah ke layar berhasil.
   if (!deposit || (!weighed && !processing)) {
@@ -42,22 +46,36 @@ export default function KonfirmasiTransaksiPage() {
     );
   }
 
-  function confirm() {
-    if (!deposit) return;
-    setFailed(false);
+  async function confirm() {
+    if (!deposit || processing) return;
     setProcessing(true);
-    // Simulasi panggilan server: konfirmasi atomik dan idempotent.
-    setTimeout(() => {
-      // shortcut: kegagalan disimulasikan dari status offline perangkat; ganti dengan galat jaringan lib/api.
-      if (!navigator.onLine) {
-        setProcessing(false);
-        setFailed(true);
-        return;
-      }
-      confirmDeposit(deposit.id, idempotencyKey);
+    setFailed(false);
+    setConfirmError(null);
+    try {
+      await confirmDeposit(deposit.id, idempotencyKey);
       router.replace(`/petugas/pengajuan/${deposit.id}/berhasil`);
-    }, 700);
+    } catch (cause) {
+      setProcessing(false);
+      setFailed(true);
+      setConfirmError(userMessage(cause));
+    }
   }
+
+  const notice = failed
+    ? {
+        noticeTone: "error" as const,
+        noticeTitle: "Konfirmasi Gagal",
+        noticeText: "Transaksi belum tersimpan. Aman untuk coba lagi dengan kunci yang sama.",
+      }
+    : processing
+      ? {
+          noticeTitle: "Memproses Transaksi…",
+          noticeText: "Mohon tunggu. Jangan tutup halaman ini; konfirmasi hanya diproses sekali.",
+        }
+      : {
+          noticeTitle: "QR Tervalidasi",
+          noticeText: "Periksa data sekali lagi. Konfirmasi hanya sekali dan tidak dapat diulang.",
+        };
 
   return (
     <StepScreen>
@@ -66,26 +84,13 @@ export default function KonfirmasiTransaksiPage() {
         subtitle={`${deposit.code} · ${failed ? "Gagal" : processing ? "Memproses" : "QR tervalidasi"}`}
         backHref={`/petugas/pengajuan/${id}/scan`}
       />
-      {failed ? (
-        <HasilSummary
-          deposit={deposit}
-          noticeTone="error"
-          noticeTitle="Koneksi Terputus"
-          noticeText="Transaksi belum tersimpan. Aman untuk coba lagi: tidak akan tercatat ganda."
-        />
-      ) : processing ? (
-        <HasilSummary
-          deposit={deposit}
-          noticeTitle="Memproses Transaksi…"
-          noticeText="Mohon tunggu. Jangan tutup halaman ini; konfirmasi hanya diproses sekali."
-        />
-      ) : (
-        <HasilSummary
-          deposit={deposit}
-          noticeTitle="QR Tervalidasi"
-          noticeText="Periksa data sekali lagi. Konfirmasi hanya sekali dan tidak dapat diulang."
-        />
-      )}
+      <HasilSummary
+        deposit={deposit}
+        {...notice}
+        valueLoading={deposit.finalTotal === undefined}
+        valueError={value.error}
+        onRetryValue={value.retry}
+      />
       <StepActions>
         <button
           type="button"
@@ -95,8 +100,25 @@ export default function KonfirmasiTransaksiPage() {
         >
           Batal
         </button>
-        <StepNext arrow={false} disabled={processing} onClick={confirm}>
-          {processing ? "Memproses…" : failed ? "Coba Lagi" : "Konfirmasi Transaksi"}
+        {confirmError || !online ? (
+          <p role="alert" className="text-[12px] leading-[17px] font-semibold text-[#d92116]">
+            {online ? confirmError : "Sedang offline. Periksa koneksi lalu coba lagi."}
+          </p>
+        ) : null}
+        <StepNext
+          arrow={false}
+          disabled={processing || !online || deposit.finalTotal === undefined}
+          onClick={confirm}
+        >
+          {processing
+            ? "Memproses…"
+            : !online
+              ? "Sedang offline"
+              : deposit.finalTotal === undefined
+                ? "Nilai belum tersedia"
+                : failed
+                    ? "Coba Lagi"
+                    : "Konfirmasi Transaksi"}
         </StepNext>
       </StepActions>
 
