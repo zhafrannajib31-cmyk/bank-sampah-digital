@@ -5,6 +5,7 @@ import { UpdateWeightDto } from './dto/update-weight.dto';
 import { Decimal } from '@prisma/client-runtime-utils';
 import { UnitAccessService } from '../../common/services/unit-access.service';
 import { WastePriceService } from '../waste-prices/waste-prices.service';
+import { depositTotals, lineTotalOf } from './deposit-totals';
 
 @Injectable()
 export class DepositService {
@@ -308,14 +309,7 @@ export class DepositService {
     }
     // Calculate total weight and value
     const items = deposit.items;
-    let totalWeight = new Decimal(0);
-    let totalValue = new Decimal(0);
-    for (const item of items) {
-      const weight = item.actualWeight ?? '0';
-      const price = item.unitPriceSnapshot ?? '0';
-      totalWeight = totalWeight.plus(new Decimal(weight));
-      totalValue = totalValue.plus(new Decimal(weight).times(new Decimal(price)));
-    }
+    const { totalWeight, totalValue } = depositTotals(items);
     return {
       totalWeight: totalWeight.toFixed(3),
       totalValue: totalValue.toFixed(2),
@@ -324,7 +318,7 @@ export class DepositService {
         categoryId: item.categoryId,
         actualWeight: item.actualWeight,
         unitPriceSnapshot: item.unitPriceSnapshot,
-        lineTotal: new Decimal(item.actualWeight ?? '0').times(new Decimal(item.unitPriceSnapshot ?? '0')).toFixed(2),
+        lineTotal: lineTotalOf(item).toFixed(2),
       })),
     };
   }
@@ -431,12 +425,14 @@ export class DepositService {
     await this.prisma.$transaction(async (tx) => {
       for (const item of items) {
         const categoryId = finalCategory.get(item.itemId)!;
+        const price = prices.get(categoryId)!;
         const { count } = await tx.depositItem.updateMany({
           where: { id: item.itemId, depositId: id },
           data: {
             actualWeight: new Decimal(item.actualWeight),
             categoryId,
-            unitPriceSnapshot: prices.get(categoryId)!,
+            unitPriceSnapshot: price,
+            lineTotal: lineTotalOf({ actualWeight: item.actualWeight, unitPriceSnapshot: price }),
           },
         });
         if (count === 0) {
@@ -502,14 +498,7 @@ export class DepositService {
     this.assertWeighed(deposit.items);
 
     const items = deposit.items;
-    let totalWeight = new Decimal(0);
-    let totalValue = new Decimal(0);
-    for (const item of items) {
-      const weight = item.actualWeight ?? '0';
-      const price = item.unitPriceSnapshot ?? '0';
-      totalWeight = totalWeight.plus(new Decimal(weight));
-      totalValue = totalValue.plus(new Decimal(weight).times(new Decimal(price)));
-    }
+    const { totalWeight, totalValue } = depositTotals(items);
     return {
       totalWeight: totalWeight.toFixed(3),
       totalValue: totalValue.toFixed(2),
@@ -518,7 +507,7 @@ export class DepositService {
         categoryId: item.categoryId,
         actualWeight: item.actualWeight,
         unitPriceSnapshot: item.unitPriceSnapshot,
-        lineTotal: new Decimal(item.actualWeight ?? '0').times(new Decimal(item.unitPriceSnapshot ?? '0')).toFixed(2),
+        lineTotal: lineTotalOf(item).toFixed(2),
       })),
     };
   }
@@ -560,14 +549,7 @@ export class DepositService {
     }
     this.assertWeighed(deposit.items);
 
-    let totalWeight = new Decimal(0);
-    let totalValue = new Decimal(0);
-    for (const item of deposit.items) {
-      const weight = item.actualWeight ?? '0';
-      const price = item.unitPriceSnapshot ?? '0';
-      totalWeight = totalWeight.plus(new Decimal(weight));
-      totalValue = totalValue.plus(new Decimal(weight).times(new Decimal(price)));
-    }
+    const { totalWeight, totalValue } = depositTotals(deposit.items);
     const result = await this.prisma.$transaction(async (prisma) => {
       const transaction = await prisma.transaction.create({
         data: {
@@ -667,6 +649,7 @@ export class DepositService {
         estimatedWeight: item.estimatedWeight,
         actualWeight: item.actualWeight,
         unitPriceSnapshot: item.unitPriceSnapshot,
+        lineTotal: item.lineTotal,
         inspectionStatus: item.inspectionStatus,
         rejectionReason: item.rejectionReason,
         createdAt: item.createdAt,
