@@ -720,7 +720,7 @@ Selesai kalau:
 
 Catatan penyelesaian (22 Nov 2026): `deposit-totals.ts` menghitung `lineTotal = actualWeight × unitPriceSnapshot` dan total berat/nilai dengan `Decimal` (bukan float). `PATCH /deposits/:id/weight` kini menyimpan `line_total` di `deposit_items` dalam transaksi yang sama dengan snapshot; `POST /deposits/:id/value`, kalkulasi pengajuan Selesai, dan konfirmasi memakai satu fungsi yang sama (tidak ada lagi tiga loop duplikat). Respons item deposit menyertakan `lineTotal`. Test unit `deposit-totals.spec.ts` (presisi 0,1 × 0,2 = 0,02; penjumlahan tiga item; item kosong = 0) lulus; e2e/lint/build BE lulus.
 
-## [ ] BSD-60 · Konfirmasi transaksi, atomik dan idempotent
+## [x] BSD-60 · Konfirmasi transaksi, atomik dan idempotent
 **Zhafran** · S4 · 8 SP · Prasyarat: BSD-59
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`, `be-bsd/src/modules/deposits/`
@@ -728,8 +728,10 @@ Boleh sentuh: `be-bsd/src/modules/transactions/`, `be-bsd/src/modules/deposits/`
 Dalam satu DB transaction dengan idempotency key.
 
 Selesai kalau:
-- [ ] Status menjadi Selesai hanya setelah konfirmasi petugas (FR-13, TC-06)
-- [ ] Pengulangan permintaan tidak membuat transaksi ganda (TC-09)
+- [x] Status menjadi Selesai hanya setelah konfirmasi petugas (FR-13, TC-06)
+- [x] Pengulangan permintaan tidak membuat transaksi ganda (TC-09)
+
+Catatan penyelesaian (22 Nov 2026): `POST /deposits/:id/confirm` (role petugas, cek unit) kini melakukan cek kunci idempotensi, `updateMany` bersyarat `status = diproses`, pembuatan transaksi, dan `transaction_events` di **satu `$transaction`**. Retry dengan kunci sama mengembalikan transaksi lama tanpa penulisan; konfirmasi kedua dengan kunci lain ditolak 409 `DUPLICATE` (baik saat status sudah Selesai maupun saat dua permintaan bersamaan, lewat `WHERE status` + constraint unik). Body divalidasi `ConfirmTransactionDto` (kunci wajib, teks, maks 100 karakter). Bukti: curl 3001 — retry kunci sama id transaksi identik, kunci lain 409, nasabah 403, kunci kosong 400; test unit/mock 7 kasus di `test/deposit-confirm.e2e-spec.ts` lulus (total 37 e2e), unit 5/5, tsc/lint/build lulus.
 
 ## [ ] BSD-61 · Pencatatan transaction_events
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-56
