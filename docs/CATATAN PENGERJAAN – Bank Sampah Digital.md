@@ -19,7 +19,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
 | Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task (BSD-01 s.d. BSD-103) |
-| Task selesai | 40 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–38 (fondasi backend, auth, RBAC, CRUD unit & kategori) selesai 17–19 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026 — E3 selesai, E4/E5/E7 berjalan |
+| Task selesai | 42 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58 (penerimaan pengajuan, timbang aktual, snapshot harga saat penimbangan) selesai 19–22 Nov 2026 — E3 selesai, E4/E5/E7/E8 berjalan |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -31,10 +31,10 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E2 | Analisis kebutuhan dan desain UX | 1 | 8 / 11 | Sedang berjalan |
 | E3 | Fondasi backend dan database | 2 | 8 / 8 | Selesai (migrasi & seed terverifikasi di PostgreSQL 16.6 lokal, K-04 tertutup; batas rate limit khusus endpoint auth menyusul BSD-29) |
 | E4 | Autentikasi, role, dan keamanan akses | 2 | 5 / 8 | Sedang berjalan (BSD-29, BSD-30, BSD-31, BSD-33, BSD-34 selesai; BSD-32 dan BSD-35/36 berikutnya) |
-| E5 | Data master | 2–3 | 2 / 7 | Sedang berjalan (BSD-37, BSD-38 selesai; BSD-39 CRUD ada, pemilihan harga aktif per tanggal/unit & `createdBy` menyusul) |
+| E5 | Data master | 2–3 | 3 / 7 | Sedang berjalan (BSD-37, BSD-38, BSD-39 selesai; BSD-40/41 berikutnya) |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 6 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-51, BSD-52, BSD-53, BSD-55 selesai; BSD-54 notifikasi berikutnya) |
-| E8 | Penimbangan dan transaksi | 4 | 2 / 9 | Sedang berjalan (BSD-56, BSD-57 selesai; BSD-58–63 berikutnya) |
+| E8 | Penimbangan dan transaksi | 4 | 3 / 9 | Sedang berjalan (BSD-56, BSD-57, BSD-58 selesai; BSD-59–63 berikutnya) |
 | E9 | Riwayat, saldo, bukti transaksi | 4 | 0 / 5 | Belum mulai |
 | E10 | Dashboard dan laporan | 5 | 0 / 4 | Belum mulai |
 | E11 | Website publik dan edukasi | 5 | 0 / 4 | Belum mulai |
@@ -135,6 +135,8 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 | --- | --- | --- | --- | --- | --- |
 | 19 Nov 2026 | BSD-56 | `PATCH /deposits/:id/status` (petugas unit) mengubah Menunggu → Diproses dengan `updateMany` bersyarat + event dalam satu `$transaction`; FE tombol "Terima & Periksa" memanggil API, menonaktifkan tombol saat proses, menampilkan error bahasa Indonesia, dan baru pindah halaman setelah sukses. | Zhafran Najib | `be-bsd/src/modules/deposits/`, `fe-bsd/src/features/petugas/{api.ts,store.ts}`, `fe-bsd/src/app/petugas/(flow)/pengajuan/[id]/page.tsx`; curl: Sukajadi 403, nasabah 403, Cibeunying 200 → diproses, retry 403; e2e BE 30/30, `tsc`/lint/build lulus | Selesai |
 | 19 Nov 2026 | BSD-57 | `PATCH /deposits/:id/weight` menyimpan berat aktual per item + koreksi kategori aktif dengan validasi DTO dan event atomik; FE layar timbang memakai harga API, pilihan koreksi jenis, dan penyimpanan async dengan error bahasa Indonesia. | Zhafran Najib | `be-bsd/src/modules/deposits/{dto/update-weight.dto.ts,deposit.service.ts,deposit.controller.ts}`, `fe-bsd/src/app/petugas/(flow)/pengajuan/[id]/timbang/page.tsx`, `fe-bsd/src/features/petugas/{api.ts,store.ts}`, `fe-bsd/src/features/nasabah/{api.ts,types.ts}`, `fe-bsd/src/features/petugas/hasil-summary.tsx`; curl: 0/-1/2.1234/abc → 400, kategori asing 400, item asing 404, berat 2.75 tersimpan, koreksi kategori berhasil; e2e BE 30/30, `tsc`/lint/build lulus | Selesai |
+| 22 Nov 2026 | BSD-58 | Snapshot harga diisi server saat penimbangan: `WastePriceService.resolveActive()` memilih harga aktif per unit/kategori/tanggal (harga unit menimpa global), berat aktual + `unitPriceSnapshot` + event ditulis dalam satu `$transaction`; route `PATCH /deposits/:id/snapshoot` yang menerima harga dari klien dihapus. `confirmTransaction`/`calculateValue` menolak (400) item tanpa berat/snapshot. | Zhafran Najib | `be-bsd/src/modules/waste-prices/waste-prices.service.ts`, `be-bsd/src/modules/deposits/{deposit.service.ts,deposit.controller.ts,deposit.module.ts}`; curl: PET Cibeunying 4000 & Kaleng 8000 (bukan global 3500), harga diubah 4000 → 4500 tidak mengubah snapshot lama, timbang ulang memakai harga aktif baru, konfirmasi/nilai sebelum timbang → 400, 2,25 kg × 4000 = 9000,00; e2e BE 30/30, `tsc`/lint/build lulus | Selesai |
+| 22 Nov 2026 | BSD-39 | Pemilihan harga aktif per tanggal/unit dipindah ke modul harga (`resolveActive`) dan `createdBy` diisi dari token pada `POST`/`PATCH /waste-prices`; dua kriteria selesai yang tertunda sejak 19 Nov 2026 kini terpenuhi. | Zhafran Najib | `be-bsd/src/modules/waste-prices/{waste-prices.service.ts,waste-prices.controller.ts}`; curl: `PATCH /waste-prices/:id` mengisi `createdBy` admin dan tampil di `GET`; e2e BE 30/30, lint/build lulus | Selesai |
 | *isi* |  |  |  |  |  |
 
 ### Sprint 5 (usulan 11–22 Jan 2027) – Integrasi, Website, Testing
@@ -168,7 +170,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 |- [BSD-32][BE] Modul `users` + `UserController` / `UserService` untuk admin: `GET /users` (daftar petugas, filter role/status), `POST /users` (buat petugas baru; email/phone unik, role dasar `petugas`, terhubung ke unit lewat `unit_staff`), `PATCH /users/:id/aktifasi` (aktifkan/nonaktifkan). `prisma validate` + `generate`, lint, test, build lulus.
 |- [BSD-37][BE] API CRUD unit Bank Sampah: `GET /units` (daftar, filter publicationStatus/serviceStatus), `POST /units` (buat), `PATCH /units/:id` (perbarui), `DELETE /units/:id` (hapus). Hanya admin yang diizinkan (`@UseGuards(RoleGuard) + @Roles('admin')`). `address` opsional, `latitude`/`longitude` optional, `operatingHours`, `contactPhone`, `contactEmail`, `serviceStatus`, `publicationStatus`, `isSimulated` tersimpan. `prisma validate` + `generate`, lint, test, build lulus.
 |- [BSD-38][BE] API CRUD kategori sampah: `GET /waste-categories` (daftar, filter status), `POST /waste-categories`, `PATCH /waste-categories/:id`, `DELETE /waste-categories/:id`. Hanya admin yang diizinkan. Kategori dapat diaktifkan/nonaktifkan. `prisma validate` + `generate`, lint, test, build lulus.
-|- [BSD-39][BE] API harga sampah + histori: `GET /waste-prices` (daftar, filter status/categoryId), `POST /waste-prices`, `PATCH /waste-prices/:id`, `DELETE /waste-prices/:id`. `unit_id` NULL = harga global; `is_simulated` untuk data contoh. `created_at` tersimpan. Catatan: pemilihan harga aktif per tanggal/unit masih di `deposit.service.ts` dan `createdBy` belum diisi, sehingga BSD-39 tetap terbuka. `prisma validate` + `generate`, lint, test, build lulus.
+|- [BSD-39][BE] API harga sampah + histori: `GET /waste-prices` (daftar, filter status/categoryId), `POST /waste-prices`, `PATCH /waste-prices/:id`, `DELETE /waste-prices/:id`. `unit_id` NULL = harga global; `is_simulated` untuk data contoh. `created_at` tersimpan. Catatan: pemilihan harga aktif per tanggal/unit masih di `deposit.service.ts` dan `createdBy` belum diisi (ditutup 22 Nov 2026 lewat BSD-39/58). `prisma validate` + `generate`, lint, test, build lulus.
 ||- [BSD-49][BE] API pembuatan pengajuan setoran: `POST /deposits` (nasabah, role: nasabah), status `Menunggu`, item kategori + estimasi berat. Validasi unit published, kategori valid, berat > 0. `prisma validate` + `generate`, lint, test, build lulus.
 ||- [BSD-50][BE] Estimasi nilai: respons memuat `estimatedValue` = `estimatedWeight` x `pricePerKg` (harga aktif, unit/kategori), berlabel `"bukan nilai final"` (FR-08). `prisma validate` + `generate`, lint, test, build lulus.
 ||- [BSD-51][BE] API status & pembatalan: `GET /deposits/:id` (nasabah, data milik), `PATCH /deposits/:id/batal` (alasan, role: nasabah). Status `Menunggu` hanya bisa dibatalkan. `cancelledAt`, `cancellationReason` terisi. `prisma validate` + `generate`, lint, test, build lulus.
@@ -181,6 +183,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-56][FE] `petugasApi.acceptDeposit` + aksi store mengganti item dari respons API; tombol "Terima & Periksa" menunggu respons (label "Memproses…", tombol nonaktif, error bahasa Indonesia) dan baru berpindah ke periksa setelah sukses.
 - [BSD-57][BE] `PATCH /deposits/:id/weight` dengan `UpdateWeightDto`: berat desimal positif (maks 3 desimal), koreksi kategori aktif, item harus milik pengajuan, update + event dalam satu `$transaction`.
 - [BSD-57][FE] `petugasApi.updateWeight` + `weighDeposit` async; layar timbang memakai harga aktif API, `<select>` koreksi jenis sampah per item, tombol "Simpan Berat Aktual" menunggu respons dengan error bahasa Indonesia.
+- [BSD-58][BE] `PATCH /deposits/:id/weight` mengisi `unitPriceSnapshot` dari harga aktif (server), memvalidasi kategori pengganti aktif, dan menulis berat + kategori + snapshot + event `WEIGHT_UPDATE` dalam satu `$transaction`. `assertWeighed()` menolak konfirmasi/nilai (400) bila masih ada item tanpa berat aktual atau snapshot.
 
 **Changed**
 
@@ -210,6 +213,8 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-39][DOCS] Klaim "harga aktif dipilih berdasarkan tanggal & unit" dan "`createdBy` dicatat" pada catatan rilis dipersempit: modul harga baru menyediakan CRUD, sedangkan pemilihan harga aktif masih di `deposit.service.ts` dan `createdBy` belum disimpan — BSD-39 tetap terbuka.
 - [BSD-56][BE] `updateStatus` kini menulis status dan `transaction_events` dalam satu transaksi DB dengan pengecekan status di `WHERE` (sebelumnya dua operasi terpisah dan cek status sebelum update), serta mengembalikan respons lengkap seperti endpoint daftar.
 - [BSD-57][FE] `DepositItem.pricePerKg` dipetakan dari kolom `pricePerKg` respons API (harga aktif unit/global); layar timbang dan ringkasan hasil tidak lagi memakai kategori/harga mock. Ringkasan menampilkan "Nilai menyusul"/"—" sampai server menghitung nilai final (BSD-59), bukan Rp0 palsu.
+- [BSD-39][BE] Aturan pemilihan harga aktif pindah dari `deposit.service.ts` (`activePrices()`) ke `WastePriceService.resolveActive()`; modul harga kini satu-satunya pemilik logika unit-menimpa-global dan rentang berlaku. `POST`/`PATCH /waste-prices` mengisi `createdBy` dari token (aktor terakhir) dan mengembalikannya di daftar/detail.
+- [BSD-58][BE] Snapshot harga tidak lagi bisa dikirim klien: `snapshotPrice()` dan route `PATCH /deposits/:id/snapshoot` dihapus; snapshot hanya lahir dari penimbangan petugas dan dihitung ulang setiap penyimpanan timbangan (transaksi baru final saat konfirmasi).
 
 **Fixed**
 
@@ -223,6 +228,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 **Removed**
 
 - [BSD-52][FE] `buildDeposit()` di `features/nasabah/prototype-api.ts` dihapus: pembuatan pengajuan sekarang dilakukan `POST /deposits`, dan fungsi ini sudah tidak dipakai (kode mati).
+- [BSD-58][BE] `PATCH /deposits/:id/snapshoot` beserta `DepositService.snapshotPrice()` dihapus: endpoint menerima harga dari klien (lubang kepercayaan) dan tidak dipakai FE.
 
 ### Template Entri Changelog
 
@@ -337,4 +343,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.16 | 19 Nov 2026 | Tambah `GET /deposits/petugas` (unit-scoped) dan alihkan store petugas dari localStorage ke API, BSD-55 selesai, progres 38/103, E7 6/7; ralat catatan rilis BSD-39 (pemilihan harga aktif & `createdBy` belum ada, task tetap terbuka) | Zhafran Najib |
 | 1.17 | 19 Nov 2026 | Selesaikan BSD-56: transisi Menunggu → Diproses atomik & unit-scoped di BE, tombol terima FE menunggu respons API, progres 39/103, E8 1/9 | Zhafran Najib |
 | 1.18 | 19 Nov 2026 | Selesaikan BSD-57: berat aktual + koreksi kategori tersimpan lewat API dengan validasi DTO dan event atomik, layar timbang lepas dari data mock, progres 40/103, E8 2/9 | Zhafran Najib |
+| 1.19 | 22 Nov 2026 | Selesaikan BSD-58 (snapshot harga dihitung server saat penimbangan, endpoint snapshot dari klien dihapus, konfirmasi/nilai menolak item belum ditimbang) dan BSD-39 (harga aktif per tanggal/unit di modul harga, `createdBy` dicatat), progres 42/103, E5 3/7, E8 3/9 | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |
