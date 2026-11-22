@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Decimal } from '@prisma/client-runtime-utils';
 import { PrismaService } from '../../common/prisma.service';
 import { UnitAccessService } from '../../common/services/unit-access.service';
+import { depositTotals, lineTotalOf } from '../deposits/deposit-totals';
+import { CorrectTransactionDto } from './dto/transaction-action.dto';
 
 @Injectable()
 export class TransactionService {
@@ -154,6 +157,131 @@ export class TransactionService {
       ...this.mapTransaction(transaction),
       saldo: user?.saldo ?? '0',
     };
+  }
+
+  /**
+   * Admin membatalkan transaksi yang sudah Selesai (BSD-62). Status transaksi dan
+   * pengajuan diubah bersama event; saldo dihitung ulang dari transaksi aktif.
+   */
+  async cancelTransaction(id: string, adminId: string, reason: string) {
+    const transaction = await this.prisma.transaction.findUnique({ where: { id } });
+    if (!transaction) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' });
+    }
+    if (!reason?.trim()) {
+      throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan pembatalan wajib diisi.' });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.updateMany({
+        where: { id, status: 'active' },
+        data: { status: 'cancelled' },
+      });
+      if (count === 0) {
+        throw new ConflictException({ code: 'DUPLICATE', message: 'Transaksi sudah dibatalkan atau dikoreksi.' });
+      }
+      await tx.deposit.updateMany({
+        where: { id: transaction.depositId, status: 'selesai' },
+        data: { status: 'dibatalkan', cancelledAt: new Date(), cancellationReason: reason },
+      });
+      await tx.transactionEvent.create({
+        data: {
+          depositId: transaction.depositId,
+          transactionId: id,
+          eventType: 'CANCELLED_AFTER_CONFIRMATION',
+          oldStatus: 'active',
+          newStatus: 'cancelled',
+          actorId: adminId,
+          reason,
+          metadata: { previousTotalValue: transaction.totalValue.toFixed(2) },
+        },
+      });
+      await this.refreshSaldo(tx, transaction.customerId);
+    });
+
+    return this.getTransactionDetail(id, transaction.customerId);
+  }
+
+  /** Admin mengoreksi berat pasca-Selesai (BSD-62); nilai lama tetap di event. */
+  async correctTransaction(id: string, adminId: string, dto: CorrectTransactionDto) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id },
+      include: { deposit: { include: { items: true } } },
+    });
+    if (!transaction) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' });
+    }
+    if (!dto.reason?.trim()) {
+      throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan koreksi wajib diisi.' });
+    }
+
+    const knownItems = new Map(transaction.deposit.items.map((item) => [item.id, item]));
+    const updates = dto.items.map((item) => {
+      const current = knownItems.get(item.itemId);
+      if (!current) {
+        throw new BadRequestException({ code: 'BAD_REQUEST', message: `Item ${item.itemId} tidak ditemukan pada transaksi ini.` });
+      }
+      return {
+        id: item.itemId,
+        actualWeight: new Decimal(item.actualWeight),
+        lineTotal: lineTotalOf({ actualWeight: item.actualWeight, unitPriceSnapshot: current.unitPriceSnapshot }),
+      };
+    });
+    const updatesById = new Map(updates.map((item) => [item.id, item]));
+    const correctedItems = transaction.deposit.items.map((item) => {
+      const change = updatesById.get(item.id);
+      return change ? { ...item, actualWeight: change.actualWeight, lineTotal: change.lineTotal } : item;
+    });
+    const { totalWeight, totalValue } = depositTotals(correctedItems);
+
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.updateMany({
+        where: { id, status: 'active' },
+        data: { status: 'corrected', totalWeight, totalValue },
+      });
+      if (count === 0) {
+        throw new ConflictException({ code: 'DUPLICATE', message: 'Transaksi sudah dibatalkan atau dikoreksi.' });
+      }
+      for (const item of updates) {
+        await tx.depositItem.update({
+          where: { id: item.id },
+          data: { actualWeight: item.actualWeight, lineTotal: item.lineTotal },
+        });
+      }
+      await tx.transactionEvent.create({
+        data: {
+          depositId: transaction.depositId,
+          transactionId: id,
+          eventType: 'CORRECTION',
+          oldStatus: 'active',
+          newStatus: 'corrected',
+          actorId: adminId,
+          reason: dto.reason,
+          metadata: {
+            previousTotalWeight: transaction.totalWeight.toString(),
+            previousTotalValue: transaction.totalValue.toFixed(2),
+            totalWeight: totalWeight.toString(),
+            totalValue: totalValue.toFixed(2),
+            items: dto.items.map((item) => ({ itemId: item.itemId, actualWeight: item.actualWeight })),
+          },
+        },
+      });
+      await this.refreshSaldo(tx, transaction.customerId);
+    });
+
+    return this.getTransactionDetail(id, transaction.customerId);
+  }
+
+  /** Saldo = jumlah transaksi aktif/terkoreksi; dihitung ulang sekali per aksi. */
+  private async refreshSaldo(tx: Pick<PrismaService, 'transaction' | 'user'>, customerId: string) {
+    const result = await tx.transaction.aggregate({
+      where: { customerId, status: { in: ['active', 'corrected'] } },
+      _sum: { totalValue: true },
+    });
+    await tx.user.update({
+      where: { id: customerId },
+      data: { saldo: result._sum.totalValue ?? 0 },
+    });
   }
 
   private mapTransaction(transaction: any) {
