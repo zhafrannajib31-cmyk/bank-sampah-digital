@@ -161,30 +161,25 @@ export class DepositService {
       throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan pembatalan wajib diisi.' });
     }
 
-    const cancelled = await this.prisma.deposit.update({
-      where: { id },
-      data: {
-        status: 'dibatalkan',
-        cancelledAt: new Date(),
-        cancellationReason: reason,
-      },
-    });
-
-    // Record event for cancellation
-    await this.prisma.transactionEvent.create({
-      data: {
-        depositId: cancelled.id,
-        eventType: 'CANCELLED',
-        oldStatus: 'menunggu',
-        newStatus: 'dibatalkan',
-        actorId: customerId,
-      },
-    });
-
-    // Re-fetch with items for mapping
-    const withItems = await this.prisma.deposit.findUnique({
-      where: { id: cancelled.id },
-      include: { items: true },
+    const withItems = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.deposit.updateMany({
+        where: { id, status: 'menunggu' },
+        data: { status: 'dibatalkan', cancelledAt: new Date(), cancellationReason: reason },
+      });
+      if (count === 0) {
+        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan dengan status Menunggu yang bisa dibatalkan.' });
+      }
+      await tx.transactionEvent.create({
+        data: {
+          depositId: id,
+          eventType: 'CANCELLED',
+          oldStatus: 'menunggu',
+          newStatus: 'dibatalkan',
+          actorId: customerId,
+          reason,
+        },
+      });
+      return tx.deposit.findUnique({ where: { id }, include: { items: true } });
     });
     return this.mapDeposit(withItems!);
   }
@@ -211,30 +206,25 @@ export class DepositService {
       throw new BadRequestException({ code: 'BAD_REQUEST', message: 'Alasan pembatalan wajib diisi.' });
     }
 
-    const cancelled = await this.prisma.deposit.update({
-      where: { id },
-      data: {
-        status: 'dibatalkan',
-        cancelledAt: new Date(),
-        cancellationReason: reason,
-      },
-    });
-
-    // Record event for cancellation after confirmation
-    await this.prisma.transactionEvent.create({
-      data: {
-        depositId: cancelled.id,
-        eventType: 'CANCELLED_AFTER_CONFIRMATION',
-        oldStatus: 'selesai',
-        newStatus: 'dibatalkan',
-        actorId: customerId,
-        metadata: { reason },
-      },
-    });
-
-    const withItems = await this.prisma.deposit.findUnique({
-      where: { id: cancelled.id },
-      include: { items: true },
+    const withItems = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.deposit.updateMany({
+        where: { id, status: 'selesai' },
+        data: { status: 'dibatalkan', cancelledAt: new Date(), cancellationReason: reason },
+      });
+      if (count === 0) {
+        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Selesai yang bisa dibatalkan setelah konfirmasi.' });
+      }
+      await tx.transactionEvent.create({
+        data: {
+          depositId: id,
+          eventType: 'CANCELLED_AFTER_CONFIRMATION',
+          oldStatus: 'selesai',
+          newStatus: 'dibatalkan',
+          actorId: customerId,
+          reason,
+        },
+      });
+      return tx.deposit.findUnique({ where: { id }, include: { items: true } });
     });
     return this.mapDeposit(withItems!);
   }
