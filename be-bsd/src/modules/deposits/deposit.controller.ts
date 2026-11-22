@@ -142,25 +142,6 @@ export class DepositController {
     return this.depositService.updateWeight(id, petugasId, body.items);
   }
 
-  @Patch(':id/snapshoot')
-  @ApiOperation({ summary: 'Snapshot harga (petugas)' })
-  @ApiResponse({ status: 200, description: 'Harga di-snapshot' })
-  @ApiResponse({ status: 401, description: 'Belum login' })
-  @ApiResponse({ status: 403, description: 'Akses ditolak' })
-  @UseGuards(RoleGuard)
-  @Roles('petugas')
-  async snapshotPrice(
-    @Param('id') id: string,
-    @Req() req: any,
-    @Body() body: { items: { categoryId: string; unitPriceSnapshot: string }[] },
-  ) {
-    const petugasId = req.user?.sub;
-    if (!petugasId) {
-      throw new Error('Petugas ID not found in token');
-    }
-    return this.depositService.snapshotPrice(id, petugasId, body.items);
-  }
-
   @Post(':id/value')
   @ApiOperation({ summary: 'Hitung nilai (petugas)' })
   @ApiResponse({ status: 200, description: 'Nilai dihitung' })

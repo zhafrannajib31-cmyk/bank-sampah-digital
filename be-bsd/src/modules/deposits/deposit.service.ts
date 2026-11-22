@@ -4,12 +4,14 @@ import { CreateDepositDto } from './dto/create-deposit.dto';
 import { UpdateWeightDto } from './dto/update-weight.dto';
 import { Decimal } from '@prisma/client-runtime-utils';
 import { UnitAccessService } from '../../common/services/unit-access.service';
+import { WastePriceService } from '../waste-prices/waste-prices.service';
 
 @Injectable()
 export class DepositService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly unitAccess: UnitAccessService,
+    private readonly prices: WastePriceService,
   ) {}
 
   async create(dto: CreateDepositDto, customerId: string) {
@@ -385,9 +387,27 @@ export class DepositService {
     // Unit membership check
     await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
 
-    // Koreksi kategori oleh petugas hanya boleh ke kategori aktif (FR-11).
+    // Item harus milik pengajuan ini; kategori akhir dipakai untuk snapshot harga.
+    const existingItems = await this.prisma.depositItem.findMany({
+      where: { depositId: id },
+      select: { id: true, categoryId: true },
+    });
+    const categoryOf = new Map(existingItems.map((item) => [item.id, item.categoryId]));
     for (const item of items) {
-      if (!item.categoryId) continue;
+      if (!categoryOf.has(item.itemId)) {
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: `Item ${item.itemId} tidak ditemukan di pengajuan ini.`,
+        });
+      }
+    }
+
+    // Koreksi kategori oleh petugas hanya boleh ke kategori aktif (FR-11).
+    const finalCategory = new Map(
+      items.map((item) => [item.itemId, item.categoryId ?? categoryOf.get(item.itemId)!]),
+    );
+    for (const item of items) {
+      if (!item.categoryId || item.categoryId === categoryOf.get(item.itemId)) continue;
       const category = await this.prisma.wasteCategory.findUnique({
         where: { id: item.categoryId },
         select: { status: true },
@@ -397,14 +417,26 @@ export class DepositService {
       }
     }
 
+    // Snapshot harga diambil server dari harga aktif unit, bukan dari klien (BSD-58).
+    const prices = await this.prices.resolveActive(deposit.unitId, [...new Set(finalCategory.values())]);
+    for (const categoryId of finalCategory.values()) {
+      if (!prices.get(categoryId)) {
+        throw new BadRequestException({
+          code: 'BAD_REQUEST',
+          message: 'Harga aktif untuk salah satu jenis sampah belum tersedia. Hubungi admin sebelum menimbang.',
+        });
+      }
+    }
+
     await this.prisma.$transaction(async (tx) => {
-      // Item harus milik pengajuan ini (cegah ubah item pengajuan lain).
       for (const item of items) {
+        const categoryId = finalCategory.get(item.itemId)!;
         const { count } = await tx.depositItem.updateMany({
           where: { id: item.itemId, depositId: id },
           data: {
             actualWeight: new Decimal(item.actualWeight),
-            ...(item.categoryId ? { categoryId: item.categoryId } : {}),
+            categoryId,
+            unitPriceSnapshot: prices.get(categoryId)!,
           },
         });
         if (count === 0) {
@@ -419,11 +451,15 @@ export class DepositService {
           newStatus: 'diproses',
           actorId: petugasId,
           metadata: {
-            items: items.map(({ itemId, actualWeight, categoryId }) => ({
-              itemId,
-              actualWeight,
-              categoryId: categoryId ?? null,
-            })),
+            items: items.map(({ itemId, actualWeight }) => {
+              const categoryId = finalCategory.get(itemId)!;
+              return {
+                itemId,
+                actualWeight,
+                categoryId,
+                unitPriceSnapshot: prices.get(categoryId)!.toFixed(2),
+              };
+            }),
           },
         },
       });
@@ -442,49 +478,6 @@ export class DepositService {
       customerName: withItems?.customer?.name ?? null,
       customerPhone: withItems?.customer?.phone ?? null,
     };
-  }
-
-  async snapshotPrice(id: string, petugasId: string, snapshootData: { categoryId: string; unitPriceSnapshot: string }[]) {
-    const deposit = await this.prisma.deposit.findUnique({
-      where: { id },
-    });
-    if (!deposit) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Pengajuan tidak ditemukan.' });
-    }
-    if (deposit.status !== 'diproses') {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa snapshot harga.' });
-    }
-    // Unit membership check
-    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
-
-    // Item dicari per kategori di dalam pengajuan ini, bukan per id item
-    for (const snapshoot of snapshootData) {
-      const { count } = await this.prisma.depositItem.updateMany({
-        where: { depositId: id, categoryId: snapshoot.categoryId },
-        data: {
-          unitPriceSnapshot: new Decimal(snapshoot.unitPriceSnapshot),
-        },
-      });
-      if (count === 0) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: `Kategori ${snapshoot.categoryId} tidak ada di pengajuan ini.` });
-      }
-    }
-    await this.prisma.transactionEvent.create({
-      data: {
-        depositId: id,
-        eventType: 'PRICE_SNAPSHOT',
-        oldStatus: 'diproses',
-        newStatus: 'diproses',
-        actorId: petugasId,
-        metadata: { snapshootData },
-      },
-    });
-    // Re-fetch with items
-    const withItems = await this.prisma.deposit.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-    return this.mapDeposit(withItems!);
   }
 
   async calculateValue(id: string, petugasId: string) {
@@ -506,6 +499,7 @@ export class DepositService {
     }
     // Unit membership check
     await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
+    this.assertWeighed(deposit.items);
 
     const items = deposit.items;
     let totalWeight = new Decimal(0);
@@ -564,6 +558,7 @@ export class DepositService {
     if (deposit.status !== 'diproses') {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa dikonfirmasi.' });
     }
+    this.assertWeighed(deposit.items);
 
     let totalWeight = new Decimal(0);
     let totalValue = new Decimal(0);
@@ -606,34 +601,25 @@ export class DepositService {
 
   /**
    * Harga aktif per kategori pada tanggal berjalan: harga unit menimpa harga global.
-   * Dipakai untuk estimasi tampilan (bukan nilai final; nilai final dari penimbangan).
+   * Aturannya tinggal di modul harga; dipakai untuk estimasi tampilan (bukan nilai final).
    */
-  private async activePrices(unitId: string, categoryIds: string[], at = new Date()) {
-    const rows = await this.prisma.wastePrice.findMany({
-      where: {
-        categoryId: { in: categoryIds },
-        status: 'active',
-        OR: [{ unitId }, { unitId: null }],
-        effectiveFrom: { lte: at },
-        AND: [{ OR: [{ effectiveTo: null }, { effectiveTo: { gte: at } }] }],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-
-    const picked = new Map<string, { price: any; unitSpecific: boolean }>();
-    for (const row of rows) {
-      const unitSpecific = row.unitId === unitId;
-      const current = picked.get(row.categoryId);
-      if (!current || (unitSpecific && !current.unitSpecific)) {
-        picked.set(row.categoryId, { price: row.pricePerKg, unitSpecific });
-      }
-    }
-    return new Map([...picked].map(([categoryId, value]) => [categoryId, value.price]));
+  private activePrices(unitId: string, categoryIds: string[], at = new Date()) {
+    return this.prices.resolveActive(unitId, categoryIds, at);
   }
 
   /** Kode tiket untuk ditampilkan/diucapkan ke petugas. */
   private ticketCode(id: string) {
     return `BSD-${new Date().getFullYear()}-${id.slice(0, 6).toUpperCase()}`;
+  }
+
+  /** Tanpa berat aktual + snapshot harga, nilai transaksi akan nol; tolak lebih awal. */
+  private assertWeighed(items: { actualWeight: unknown; unitPriceSnapshot: unknown }[]) {
+    if (items.some((item) => item.actualWeight === null || item.unitPriceSnapshot === null)) {
+      throw new BadRequestException({
+        code: 'BAD_REQUEST',
+        message: 'Berat aktual dan harga per jenis wajib lengkap sebelum konfirmasi.',
+      });
+    }
   }
 
   /** Pengajuan + estimasi nilai berlabel "bukan nilai final" (FR-08). */

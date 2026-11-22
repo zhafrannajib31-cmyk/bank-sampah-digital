@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DepositController } from './deposit.controller';
 import { DepositService } from './deposit.service';
+import { WastePriceModule } from '../waste-prices/waste-prices.module';
 
 @Module({
+  imports: [WastePriceModule],
   controllers: [DepositController],
   providers: [DepositService],
   exports: [DepositService],

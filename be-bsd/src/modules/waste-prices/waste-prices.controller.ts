@@ -10,6 +10,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RoleGuard } from '../../common/guards/roles.guard';
@@ -49,8 +50,8 @@ export class WastePriceController {
   @ApiResponse({ status: 409, description: 'Harga sudah ada' })
   @UseGuards(RoleGuard)
   @Roles('admin')
-  async create(@Body() dto: CreateWastePriceDto) {
-    return this.priceService.create(dto);
+  async create(@Body() dto: CreateWastePriceDto, @Req() req: any) {
+    return this.priceService.create(dto, req.user?.sub);
   }
 
   @Patch(':id')
@@ -59,8 +60,8 @@ export class WastePriceController {
   @ApiResponse({ status: 404, description: 'Harga tidak ditemukan' })
   @UseGuards(RoleGuard)
   @Roles('admin')
-  async update(@Param('id') id: string, @Body() dto: UpdateWastePriceDto) {
-    return this.priceService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateWastePriceDto, @Req() req: any) {
+    return this.priceService.update(id, dto, req.user?.sub);
   }
 
   @Delete(':id')
