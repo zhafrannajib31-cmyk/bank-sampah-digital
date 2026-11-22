@@ -709,14 +709,16 @@ Selesai kalau:
 
 Catatan penyelesaian (22 Nov 2026): `unit_price_snapshot` diisi **server** saat `PATCH /deposits/:id/weight` memakai `WastePriceService.resolveActive()` (harga unit menimpa global, hanya baris aktif dalam rentang `effective_from`/`effective_to`), dalam transaksi yang sama dengan berat aktual + event. Endpoint lama `PATCH /deposits/:id/snapshoot` yang menerima harga dari klien dihapus (lubang kepercayaan; tidak dipakai FE). Timbang ulang menghitung snapshot baru ke harga aktif saat itu; transaksi baru final saat konfirmasi. `confirmTransaction` dan `calculateValue` kini menolak (400) bila ada item tanpa berat aktual/snapshot — mencegah transaksi Rp0. Bukti: curl 3001 — PET Cibeunying snapshot 4000 (bukan global 3500), Kaleng 8000; harga PET diubah 4000 → 4500, snapshot pengajuan tetap 4000 (TC-05), lalu dikembalikan; `POST /value` 2,25 kg × 4000 = 9000,00; konfirmasi sebelum ditimbang → 400 "Berat aktual dan harga per jenis wajib lengkap sebelum konfirmasi."; e2e BE 30/30, lint/build BE lulus.
 
-## [ ] BSD-59 · Kalkulasi nilai di server
+## [x] BSD-59 · Kalkulasi nilai di server
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-58
 
 Boleh sentuh: `be-bsd/src/modules/deposits/`
 
 Selesai kalau:
-- [ ] `line_total` = berat aktual x snapshot harga, total = jumlah semua item (FR-12, TC-04)
-- [ ] Perhitungan memakai Decimal, bukan float
+- [x] `line_total` = berat aktual x snapshot harga, total = jumlah semua item (FR-12, TC-04)
+- [x] Perhitungan memakai Decimal, bukan float
+
+Catatan penyelesaian (22 Nov 2026): `deposit-totals.ts` menghitung `lineTotal = actualWeight × unitPriceSnapshot` dan total berat/nilai dengan `Decimal` (bukan float). `PATCH /deposits/:id/weight` kini menyimpan `line_total` di `deposit_items` dalam transaksi yang sama dengan snapshot; `POST /deposits/:id/value`, kalkulasi pengajuan Selesai, dan konfirmasi memakai satu fungsi yang sama (tidak ada lagi tiga loop duplikat). Respons item deposit menyertakan `lineTotal`. Test unit `deposit-totals.spec.ts` (presisi 0,1 × 0,2 = 0,02; penjumlahan tiga item; item kosong = 0) lulus; e2e/lint/build BE lulus.
 
 ## [ ] BSD-60 · Konfirmasi transaksi, atomik dan idempotent
 **Zhafran** · S4 · 8 SP · Prasyarat: BSD-59
