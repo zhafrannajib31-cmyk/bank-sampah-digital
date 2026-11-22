@@ -529,52 +529,64 @@ export class DepositService {
     // Unit membership check
     await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
 
-    // Idempotent: retry dengan key yang sama mengembalikan transaksi yang sudah ada.
-    // Dicek sebelum validasi status supaya retry setelah sukses tidak ditolak.
-    const existing = await this.prisma.transaction.findUnique({
-      where: { idempotencyKey },
-      include: {
-        deposit: { include: { items: true } },
-      },
-    });
-    if (existing) {
-      if (existing.depositId !== deposit.id) {
-        throw new ConflictException({ code: 'DUPLICATE', message: 'Kunci idempotensi sudah dipakai pengajuan lain.' });
-      }
-      return this.mapTransaction(existing);
-    }
+    await this.unitAccess.assertStaffOfUnit(petugasId, deposit.unitId);
 
-    if (deposit.status !== 'diproses') {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa dikonfirmasi.' });
-    }
-    this.assertWeighed(deposit.items);
-
-    const { totalWeight, totalValue } = depositTotals(deposit.items);
-    const result = await this.prisma.$transaction(async (prisma) => {
-      const transaction = await prisma.transaction.create({
-        data: {
-          depositId: deposit.id,
-          customerId: deposit.customerId,
-          unitId: deposit.unitId,
-          totalWeight,
-          totalValue,
-          confirmedBy: petugasId,
-          status: 'active',
-          idempotencyKey,
-        },
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Retry dengan kunci sama mengembalikan transaksi lama tanpa menulis ulang (TC-09).
+      const existing = await tx.transaction.findUnique({
+        where: { idempotencyKey },
+        include: { deposit: { include: { items: true } } },
       });
-      await prisma.transactionEvent.createMany({
+      if (existing) {
+        if (existing.depositId !== id) {
+          throw new ConflictException({ code: 'DUPLICATE', message: 'Kunci idempotensi sudah dipakai pengajuan lain.' });
+        }
+        return existing;
+      }
+      if (deposit.status !== 'diproses') {
+        const confirmed = await tx.transaction.findUnique({ where: { depositId: id }, select: { id: true } });
+        if (confirmed) {
+          throw new ConflictException({ code: 'DUPLICATE', message: 'Pengajuan sudah dikonfirmasi.' });
+        }
+        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Hanya pengajuan Diproses yang bisa dikonfirmasi.' });
+      }
+      this.assertWeighed(deposit.items);
+      const { totalWeight, totalValue } = depositTotals(deposit.items);
+
+      // Status dicek di WHERE: dua konfirmasi bersamaan tidak boleh membuat dua transaksi.
+      const { count } = await tx.deposit.updateMany({
+        where: { id, status: 'diproses' },
+        data: { status: 'selesai', completedAt: new Date() },
+      });
+      if (count === 0) {
+        throw new ConflictException({ code: 'DUPLICATE', message: 'Pengajuan sudah dikonfirmasi.' });
+      }
+
+      let transaction;
+      try {
+        transaction = await tx.transaction.create({
+          data: {
+            depositId: deposit.id,
+            customerId: deposit.customerId,
+            unitId: deposit.unitId,
+            totalWeight,
+            totalValue,
+            confirmedBy: petugasId,
+            status: 'active',
+            idempotencyKey,
+          },
+        });
+      } catch (error) {
+        if ((error as { code?: string }).code === 'P2002') {
+          throw new ConflictException({ code: 'DUPLICATE', message: 'Kunci idempotensi sudah dipakai transaksi lain.' });
+        }
+        throw error;
+      }
+      await tx.transactionEvent.createMany({
         data: [
           { depositId: deposit.id, transactionId: transaction.id, eventType: 'STATUS_UPDATE', oldStatus: 'diproses', newStatus: 'diproses', actorId: petugasId },
           { depositId: deposit.id, transactionId: transaction.id, eventType: 'STATUS_UPDATE', oldStatus: 'diproses', newStatus: 'selesai', actorId: petugasId },
         ],
-      });
-      await prisma.deposit.update({
-        where: { id },
-        data: {
-          status: 'selesai',
-          completedAt: new Date(),
-        },
       });
       return transaction;
     });

@@ -15,6 +15,7 @@ import { Roles } from '../../common/guards/roles.decorator';
 import { DepositService } from './deposit.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { UpdateWeightDto } from './dto/update-weight.dto';
+import { ConfirmTransactionDto } from './dto/confirm-transaction.dto';
 
 @ApiTags('deposits')
 @Controller('deposits')
@@ -170,7 +171,7 @@ export class DepositController {
   async confirm(
     @Param('id') id: string,
     @Req() req: any,
-    @Body() body: { idempotencyKey: string },
+    @Body() body: ConfirmTransactionDto,
   ) {
     const petugasId = req.user?.sub;
     if (!petugasId) {
