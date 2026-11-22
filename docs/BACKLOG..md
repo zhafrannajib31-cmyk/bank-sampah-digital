@@ -756,14 +756,16 @@ Selesai kalau:
 
 Catatan penyelesaian (22 Nov 2026): endpoint `POST /transactions/:id/cancel` dan `POST /transactions/:id/correct` hanya untuk Admin (kebijakan BSD-13/BPMN). Keduanya memakai `updateMany where status = active`, sehingga aksi kedua ditolak 409 `DUPLICATE`; alasan divalidasi DTO (wajib, minimal satu karakter bukan spasi). Status transaksi, status pengajuan (untuk batal), item/line total (untuk koreksi), `transaction_events` (status lama/baru, aktor, alasan, nilai lama di `metadata`), dan saldo ditulis dalam satu `$transaction`. Saldo dihitung ulang dari `SUM(total_value)` transaksi `active`/`corrected`, jadi tidak bisa bertambah dua kali. Bukti curl 3001: batal tx 5000 → saldo 27000,00; koreksi tx 21000 → 24000 dengan saldo 30000,00; retry keduanya 409; body tanpa alasan 400 `VALIDATION_ERROR`. Test `test/transaction-actions.e2e-spec.ts` 7 kasus; e2e 47/47, unit 5/5, tsc/lint/build lulus.
 
-## [ ] BSD-63 · UI penimbangan dan konfirmasi transaksi
+## [x] BSD-63 · UI penimbangan dan konfirmasi transaksi
 **Zhafran** · S4 · 8 SP · Prasyarat: BSD-57, BSD-60
 
 Boleh sentuh: `fe-bsd/src/app/petugas/`, `fe-bsd/src/components/`
 
 Selesai kalau:
-- [ ] Detail pengajuan, input berat, dan ringkasan sebelum konfirmasi tersedia
-- [ ] Nilai ditampilkan dari respons API, bukan dihitung di FE
+- [x] Detail pengajuan, input berat, dan ringkasan sebelum konfirmasi tersedia
+- [x] Nilai ditampilkan dari respons API, bukan dihitung di FE
+
+Catatan penyelesaian (22 Nov 2026): layar hasil/konfirmasi memanggil `POST /deposits/:id/value` dan memakai `totalValue`/`lineTotal` dari be-bsd; `HasilSummary` tidak lagi menjumlahkan `finalValue` di FE. `confirmDeposit` di store sekarang `async` dan memanggil `POST /deposits/:id/confirm` dengan kunci idempotensi yang dibuat sekali per kunjungan layar; tombol dinonaktifkan saat proses, saat offline, dan saat nilai belum tersedia. Galat jaringan menampilkan pesan bahasa Indonesia dan tombol Coba Lagi memakai kunci yang sama. Bukti: curl alur nasabah→petugas menghasilkan `/value` 21000,00 (9000 + 12000) dan konfirmasi mengembalikan transaksi `active` 21000,00; `GET /deposits/petugas` menunjukkan status Selesai dengan finalTotal 21000,00. tsc, lint (0 error), dan `next build` lulus; 4 rute FE mengembalikan 200.
 
 ## [x] BSD-64 · Penanganan jaringan buruk
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-63

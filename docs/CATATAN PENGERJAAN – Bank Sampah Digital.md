@@ -19,7 +19,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | Fase saat ini | Pengembangan MVP (E4 – autentikasi/role dan E7 – pengajuan setoran) |
 | Sprint berjalan | Sprint 3 (dikerjakan mulai 18 November 2026) |
 | Total task di backlog | 103 task MVP (BSD-01 s.d. BSD-103); 10 task penjemputan Fase 2 (BSD-104–113) dihitung terpisah |
-| Task selesai | 47 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi) selesai 19–22 Nov 2026 — E3 selesai, E4/E5/E7/E8 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103 |
+| Task selesai | 48 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62/63 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi, UI timbang/konfirmasi) selesai 19–22 Nov 2026 — E3 selesai, E4/E5/E7/E8 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103 |
 | Blocker aktif | Tidak ada blocker keputusan; keputusan produk/arsitektur utama sudah ditetapkan; validasi mitra BSU (D-09) ditunda sampai akhir MVP. Catatan teknis: database dev berjalan di PostgreSQL 16.6 portable (`D:\pg-bsd`, port 5432) karena Docker tidak tersedia; migrasi & seed sudah diverifikasi (K-04 tertutup), tapi server DB harus di-start manual tiap sesi (`pg_ctl -D D:\pg-bsd\data start`) |
 | Risiko utama | Hanya 1 developer; Bank Sampah Unit (BSU) baru tersedia/diterapkan di akhir MVP sehingga validasi mitra ditunda |
 
@@ -34,7 +34,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 | E5 | Data master | 2–3 | 3 / 7 | Sedang berjalan (BSD-37, BSD-38, BSD-39 selesai; BSD-40/41 berikutnya) |
 | E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
 | E7 | Pengajuan setoran | 3 | 6 / 7 | Sedang berjalan (BSD-49, BSD-50, BSD-51, BSD-52, BSD-53, BSD-55 selesai; BSD-54 notifikasi berikutnya) |
-| E8 | Penimbangan dan transaksi | 4 | 7 / 9 | Sedang berjalan (BSD-56 s.d. BSD-62 selesai; BSD-63 berikutnya) |
+| E8 | Penimbangan dan transaksi | 4 | 8 / 9 | Sedang berjalan (BSD-56 s.d. BSD-63 selesai) |
 | E9 | Riwayat, saldo, bukti transaksi | 4 | 0 / 5 | Belum mulai |
 | E10 | Dashboard dan laporan | 5 | 0 / 4 | Belum mulai |
 | E11 | Website publik dan edukasi | 5 | 0 / 4 | Belum mulai |
@@ -141,6 +141,7 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 | 22 Nov 2026 | BSD-60 | Konfirmasi transaksi diperketat: cek kunci, transisi status bersyarat, pembuatan transaksi, dan event berada dalam satu `$transaction`; retry kunci sama mengembalikan transaksi lama, kunci lain/duplikat ditolak 409. DTO kunci ditambahkan dan 7 test kasus konfirmasi ditulis. | Zhafran Najib | `be-bsd/src/modules/deposits/{deposit.service.ts,deposit.controller.ts,dto/confirm-transaction.dto.ts}`, `be-bsd/test/deposit-confirm.e2e-spec.ts`; curl: retry sama id identik, kunci lain 409, nasabah 403, kunci kosong 400; e2e 37/37, unit 5/5, tsc/lint/build lulus | Selesai |
 | 22 Nov 2026 | BSD-61 | Jejak perubahan status dipastikan lengkap: pembatalan sebelum/sesudah konfirmasi kini menulis status + `transaction_events` atomik dengan alasan di kolom `reason`, dan test menverifikasi field status lama/baru/pelaku/waktu untuk setiap transisi. | Zhafran Najib | `be-bsd/src/modules/deposits/deposit.service.ts`, `be-bsd/test/transaction-events.e2e-spec.ts`; curl + query DB: `CANCELLED | menunggu | dibatalkan | <nasabah> | Uji audit BSD-61 | created_at` terisi; e2e 40/40, unit 5/5, tsc/lint/build lulus | Selesai |
 | 22 Nov 2026 | BSD-62 | Admin dapat membatalkan/mengoreksi transaksi Selesai lewat `POST /transactions/:id/cancel` dan `/correct`. Alasan wajib, status transaksi dijaga dengan `updateMany where status = active`, perubahan + event + saldo dalam satu transaksi DB; saldo dihitung ulang dari transaksi aktif/terkoreksi sehingga tidak dobel. | Zhafran Najib | `be-bsd/src/modules/transactions/{transaction.service.ts,transaction.controller.ts,dto/transaction-action.dto.ts}`, `be-bsd/test/transaction-actions.e2e-spec.ts`; curl + query DB: batal 5000 → saldo 27000,00, koreksi 21000 → 24000 dengan saldo 30000,00, retry 409, tanpa alasan 400; e2e 47/47, unit 5/5, tsc/lint/build lulus | Selesai |
+| 22 Nov 2026 | BSD-63 | Alur petugas tersambung penuh ke REST API: ringkasan hasil timbang mengambil nilai dari `POST /deposits/:id/value`, konfirmasi memanggil `POST /deposits/:id/confirm` dengan kunci idempotensi (bukan simulasi `setTimeout`); status loading/error/retry dan label offline ditambahkan. | Zhafran Najib | `fe-bsd/src/features/petugas/{api.ts,store.ts,hasil-summary.tsx}`, `fe-bsd/src/app/petugas/(flow)/pengajuan/[id]/{hasil,konfirmasi}/page.tsx`; curl: `/value` 21000,00 dan konfirmasi 21000,00, daftar petugas Selesai; 4 rute 200; tsc/lint(0 error)/build lulus | Selesai |
 | *isi* |  |  |  |  |  |
 
 ### Sprint 5 (usulan 11–22 Jan 2027) – Integrasi, Website, Testing
@@ -192,6 +193,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-60][BE] `ConfirmTransactionDto` memvalidasi `idempotencyKey` (wajib, teks, maks 100 karakter); test konfirmasi dengan provider tiruan mencakup atomisitas, replay kunci sama, duplikat kunci lain, misuse kunci lintas pengajuan, RBAC unit, dan status prasyarat.
 - [BSD-61][BE] Test `transaction-events.e2e-spec.ts` memverifikasi pencatatan status lama/baru/pelaku/alasan untuk pembatalan, pembatalan pasca-konfirmasi, dan transisi Menunggu → Diproses.
 - [BSD-62][BE] `CancelTransactionDto` dan `CorrectTransactionDto` mewajibkan alasan berisi teks bukan spasi; koreksi juga mewajibkan minimal satu `itemId` UUID dengan berat desimal positif.
+- [BSD-63][FE] `petugasApi.value()` dan `petugasApi.confirm()` ditambahkan; `useDepositValue()` mengambil nilai server dengan state galat dan tombol retry yang memakai kunci yang sama.
 
 **Changed**
 
@@ -228,6 +230,8 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-61][BE] Pembatalan (sebelum dan sesudah konfirmasi) kini memperbarui status dan menulis event dalam satu `$transaction` dengan `updateMany` bersyarat; alasan pembatalan pasca-konfirmasi dipindah dari `metadata` ke kolom `reason` yang memang tersedia di skema.
 - [BSD-62][BE] Pembatalan/koreksi pasca-konfirmasi dipindah ke modul `transactions` sesuai RBAC (Admin saja) dan endpoint BPMN `POST /transactions/:id/{cancel,correct}`; keduanya memakai `updateMany status = active` + agregasi saldo dalam satu `$transaction`, bukan `update` biasa.
 - [BSD-62][BE] Saldo tidak lagi bergantung pada penambahan manual saat konfirmasi: ia dihitung ulang dari `SUM(total_value)` transaksi `active`/`corrected` pada setiap aksi, sehingga koreksi/duplikat tidak bisa menggandakannya.
+- [BSD-63][FE] `confirmDeposit` tidak lagi menyimpan status Selesai di perangkat: kini async memanggil `POST /deposits/:id/confirm` dan memakai `totalValue`/`confirmedAt` dari respons server. Kunci idempotensi tetap dibuat sekali per kunjungan layar dan dipakai ulang saat retry.
+- [BSD-63][FE] `HasilSummary` mengambil total dari `deposit.finalTotal` (respons API), bukan menjumlahkan `item.finalValue` di klien; berat, snapshot harga, dan `lineTotal` per item disalin dari `POST /deposits/:id/value`.
 
 **Fixed**
 
@@ -240,6 +244,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 - [BSD-60][BE] Konfirmasi ulang pengajuan Selesai dengan kunci idempotensi berbeda dulu dikembalikan 403 "Hanya pengajuan Diproses…"; kini 409 `DUPLICATE` yang menyatakan pengajuan sudah dikonfirmasi.
 - [BSD-60][DOCS] Ralat hitungan progres: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi tidak ikut dihitung; progres sebelum BSD-60 seharusnya 44/103, bukan 43/103.
 - [BSD-62][BE] Kode lama `cancelConfirmed`/`correctAfterConfirmation` di `deposit.service.ts` tidak punya rute dan mengizinkan nasabah mengubah transaksi Selesai; implementasi baru memakai endpoint Admin di modul `transactions`. Kode lama sengaja dibiarkan (di luar cakupan file BSD-62) dan tidak bisa dipanggil dari API.
+- [BSD-63][FE] Konfirmasi dulu hanya simulasi `setTimeout(700)` + `navigator.onLine`, sehingga layar "Transaksi Berhasil" bisa tampil walau transaksi tidak tersimpan; kini menunggu respons API, tombol dinonaktifkan saat offline atau saat nilai belum tersedia, dan galat jaringan ditampilkan dengan tombol Coba Lagi.
 
 **Removed**
 
@@ -364,4 +369,5 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 | 1.21 | 22 Nov 2026 | Selesaikan BSD-60: konfirmasi atomik/idempotent diperkuat (cek kunci + `updateMany` bersyarat dalam satu transaksi), DTO kunci, test 7 kasus, ralat hitungan progres (BSD-64 ikut terhitung); progres 45/103, E8 5/9 | Zhafran Najib |
 | 1.22 | 22 Nov 2026 | Selesaikan BSD-61: jejak status lama/baru/pelaku/waktu terverifikasi, pembatalan atomik dengan alasan di kolom `reason`, test 3 kasus ditambahkan; progres 46/103, E8 6/9 | Zhafran Najib |
 | 1.23 | 22 Nov 2026 | Selesaikan BSD-62: endpoint Admin cancel/correct pasca-konfirmasi, alasan wajib, saldo dihitung ulang dari sumber transaksi, event menyimpan nilai lama, test 7 kasus; progres 47/103, E8 7/9 | Zhafran Najib |
+| 1.24 | 22 Nov 2026 | Selesaikan BSD-63: ringkasan hasil timbang dan konfirmasi petugas memakai nilai/transaksi dari be-bsd, kunci idempotensi dipakai ulang saat retry, state loading/error/offline ditambahkan; progres 48/103, E8 8/9 | Zhafran Najib |
 || 1.11 | 17 Nov 2026 | Tambah log BSD-37 (API CRUD unit), BSD-38 (API CRUD kategori), BSD-39 (API harga + histori), progres 30/103, E5 3/8, changelog terkait | Zhafran Najib |
