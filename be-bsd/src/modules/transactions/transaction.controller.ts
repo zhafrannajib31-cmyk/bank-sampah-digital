@@ -28,6 +28,13 @@ export class TransactionController {
     return this.transactionService.getTransactionsByUnit(unitId, userId);
   }
 
+  /** Nasabah: nilai akumulatif milik sendiri, bukan dana cair (BSD-66). */
+  @Get('saldo')
+  @Roles('nasabah')
+  async getSaldo(@CurrentUser('sub') customerId: string) {
+    return this.transactionService.getSaldo(customerId);
+  }
+
   /** Nasabah: detail transaksi milik sendiri (dari token, bukan query). */
   @Get(':id')
   @Roles('nasabah')

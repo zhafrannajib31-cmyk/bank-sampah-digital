@@ -46,7 +46,10 @@ describe('Pembatalan dan koreksi pasca-konfirmasi (BSD-62)', () => {
       user: { update: jest.fn().mockResolvedValue({}) },
     };
     prisma = {
-      transaction: { findUnique: jest.fn().mockResolvedValue({ ...transaction }) },
+      transaction: {
+        findUnique: jest.fn().mockResolvedValue({ ...transaction }),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { totalValue: new Decimal('12000.00') } }),
+      },
       user: { findUnique: jest.fn().mockResolvedValue({ saldo: new Decimal('12000.00') }) },
       $transaction: jest.fn(async (callback: (t: any) => unknown) => callback(tx)),
     };

@@ -57,8 +57,8 @@ describe('Riwayat dan detail transaksi nasabah (BSD-65)', () => {
       transaction: {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn().mockResolvedValue({ ...detail }),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { totalValue: new Decimal('21000.00') } }),
       },
-      user: { findUnique: jest.fn().mockResolvedValue({ saldo: new Decimal('21000.00') }) },
     };
     const module = await Test.createTestingModule({
       providers: [
@@ -71,17 +71,20 @@ describe('Riwayat dan detail transaksi nasabah (BSD-65)', () => {
   });
 
   it('riwayat difilter dari token dan diurutkan terbaru lebih dulu', async () => {
-    await service.getTransactions('cust-1');
+    prisma.transaction.findMany.mockResolvedValue([detail]);
+    const result = await service.getTransactions('cust-1');
 
     expect(prisma.transaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { customerId: 'cust-1' }, orderBy: { confirmedAt: 'desc' } }),
     );
+    expect(result[0].saldo.toFixed(2)).toBe('21000.00');
   });
 
   it('detail memuat unit, berat, snapshot, nilai per item, dan alasan pembatalan', async () => {
     const result = await service.getTransactionDetail('tx-1', 'cust-1');
 
     expect(result.unitName).toBe('Unit Simulasi');
+    expect(result.saldo.toFixed(2)).toBe('21000.00');
     expect(result.deposit.items[0]).toMatchObject({
       actualWeight: expect.any(Decimal),
       unitPriceSnapshot: expect.any(Decimal),
@@ -96,7 +99,7 @@ describe('Riwayat dan detail transaksi nasabah (BSD-65)', () => {
     prisma.transaction.findUnique.mockResolvedValue({ ...detail, customerId: 'cust-2' });
 
     await expect(service.getTransactionDetail('tx-1', 'cust-1')).rejects.toBeInstanceOf(ForbiddenException);
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.transaction.aggregate).not.toHaveBeenCalled();
   });
 
   it('detail transaksi yang tidak ada mengembalikan NOT_FOUND', async () => {

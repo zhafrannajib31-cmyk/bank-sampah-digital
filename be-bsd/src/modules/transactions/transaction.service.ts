@@ -5,6 +5,8 @@ import { UnitAccessService } from '../../common/services/unit-access.service';
 import { depositTotals, lineTotalOf } from '../deposits/deposit-totals';
 import { CorrectTransactionDto } from './dto/transaction-action.dto';
 
+const SALDO_KETERANGAN = 'Catatan nilai setoran, bukan dana yang dapat ditarik.';
+
 @Injectable()
 export class TransactionService {
   constructor(
@@ -36,10 +38,7 @@ export class TransactionService {
       },
     });
 
-    // Fetch user saldo
-    const user = await this.prisma.user.findUnique({
-      where: { id: customerId },
-    });
+    const saldo = await this.currentSaldo(this.prisma, customerId);
 
     return transactions.map(t => ({
       id: t.id,
@@ -52,7 +51,7 @@ export class TransactionService {
       confirmedAt: t.confirmedAt,
       status: t.status,
       createdAt: t.createdAt,
-      saldo: user?.saldo ?? '0',
+      saldo,
     }));
   }
 
@@ -153,13 +152,17 @@ export class TransactionService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Anda tidak boleh melihat data ini.' });
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: customerId },
-    });
-
     return {
       ...this.mapTransaction(transaction),
-      saldo: user?.saldo ?? '0',
+      saldo: await this.currentSaldo(this.prisma, customerId),
+    };
+  }
+
+  /** Nasabah: nilai akumulatif milik sendiri, dihitung dari transaksi yang sah (FR-15). */
+  async getSaldo(customerId: string) {
+    return {
+      saldo: await this.currentSaldo(this.prisma, customerId),
+      keterangan: SALDO_KETERANGAN,
     };
   }
 
@@ -276,15 +279,20 @@ export class TransactionService {
     return this.getTransactionDetail(id, transaction.customerId);
   }
 
-  /** Saldo = jumlah transaksi aktif/terkoreksi; dihitung ulang sekali per aksi. */
-  private async refreshSaldo(tx: Pick<PrismaService, 'transaction' | 'user'>, customerId: string) {
-    const result = await tx.transaction.aggregate({
+  /** Satu baris transaksi menyumbang nilai sekali; batal tidak ikut, koreksi pakai nilai baru. */
+  private async currentSaldo(db: Pick<PrismaService, 'transaction'>, customerId: string) {
+    const result = await db.transaction.aggregate({
       where: { customerId, status: { in: ['active', 'corrected'] } },
       _sum: { totalValue: true },
     });
+    return result._sum.totalValue ?? new Decimal(0);
+  }
+
+  /** Saldo tersimpan diselaraskan dengan sumber transaksi sekali per aksi (BSD-62). */
+  private async refreshSaldo(tx: Pick<PrismaService, 'transaction' | 'user'>, customerId: string) {
     await tx.user.update({
       where: { id: customerId },
-      data: { saldo: result._sum.totalValue ?? 0 },
+      data: { saldo: await this.currentSaldo(tx, customerId) },
     });
   }
 
