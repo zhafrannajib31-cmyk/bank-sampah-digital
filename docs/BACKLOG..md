@@ -790,14 +790,16 @@ Selesai kalau:
 
 Catatan penyelesaian (23 Nov 2026): `GET /transactions` dan `GET /transactions/:id` sudah ada sejak BSD-31, tetapi detail belum memenuhi AC-12.2/12.4: field `finalValue` tidak pernah diisi (kolom sebenarnya `lineTotal`), nama unit tidak ikut terpetakan karena `unit` hanya di-include di dalam `deposit`, dan alasan pembatalan tidak tersedia. `getTransactionDetail` sekarang meng-include `unit` dan `events` milik transaksi, memetakan `lineTotal`, alamat unit, `completedAt`/`cancellationReason` pengajuan, serta riwayat event (jenis, alasan, waktu). Filter kepemilikan tetap dari token (`customerId` di `where` untuk daftar, cek 403 untuk detail). Test `test/transaction-history.e2e-spec.ts` 5 kasus; e2e 52/52, unit 5/5, tsc/lint/build lulus. Bukti curl 3001: nasabah A melihat 5 transaksi miliknya; detail memuat unit "BSDU Simulasi Cibeunying", baris 9000/12000, alasan batal "Uji batal BSD-62"; nasabah baru (tidak punya transaksi) melihat `[]` dan detail milik nasabah A ditolak 403; petugas ditolak 403.
 
-## [ ] BSD-66 · Saldo atau nilai akumulatif
+## [x] BSD-66 · Saldo atau nilai akumulatif
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-60
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`
 
 Selesai kalau:
-- [ ] Nilai akumulatif bertambah satu kali per transaksi selesai (FR-15, TC-06)
-- [ ] Tidak disajikan sebagai dana yang dapat ditarik
+- [x] Nilai akumulatif bertambah satu kali per transaksi selesai (FR-15, TC-06)
+- [x] Tidak disajikan sebagai dana yang dapat ditarik
+
+Catatan penyelesaian (23 Nov 2026): saldo tidak lagi dibaca dari `users.saldo` yang bisa basi, melainkan diagregasi dari baris transaksi `active`/`corrected` milik nasabah dari token (satu baris = satu kontribusi; kunci idempotensi BSD-60 mencegah baris ganda). Endpoint baru `GET /transactions/saldo` mengembalikan `saldo` + keterangan "Catatan nilai setoran, bukan dana yang dapat ditarik."; daftar/detail tetap menyertakan saldo yang sama. Test `test/transaction-saldo.e2e-spec.ts` 3 kasus; e2e 55/55, unit 5/5, tsc/lint/build lulus. Bukti curl 3001: nasabah A saldo 51000 (21000+24000+2400+3600; batal 5000 tidak ikut), nasabah tanpa transaksi saldo 0, petugas 403, token rusak 401.
 
 ## [ ] BSD-67 · UI Riwayat, Detail, dan Saldo
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-65, BSD-66
