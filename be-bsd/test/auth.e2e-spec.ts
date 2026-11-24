@@ -31,7 +31,7 @@ describe('Auth API (e2e)', () => {
 
     prisma = app.get(PrismaService);
 
-    for (const email of ['e2e-login@contoh.test', 'e2e-inactive@contoh.test', 'e2e-dup@contoh.test', 'e2e-dup2@contoh.test', 'e2e-reg@contoh.test', 'e2e-dup3@contoh.test']) {
+    for (const email of ['e2e-login@contoh.test', 'e2e-inactive@contoh.test', 'e2e-dup@contoh.test', 'e2e-dup2@contoh.test', 'e2e-petugas@contoh.test', 'e2e-admin@contoh.test']) {
       await prisma.user.deleteMany({ where: { email } });
     }
     await prisma.user.create({
@@ -68,6 +68,24 @@ describe('Auth API (e2e)', () => {
         phone: '081200012345',
         passwordHash: hashPassword(TEST_PASSWORD, TEST_SALT),
         role: 'nasabah',
+        status: 'active',
+      },
+    });
+    await prisma.user.create({
+      data: {
+        name: 'E2E Petugas User',
+        email: 'e2e-petugas@contoh.test',
+        passwordHash: hashPassword(TEST_PASSWORD, TEST_SALT),
+        role: 'petugas',
+        status: 'active',
+      },
+    });
+    await prisma.user.create({
+      data: {
+        name: 'E2E Admin User',
+        email: 'e2e-admin@contoh.test',
+        passwordHash: hashPassword(TEST_PASSWORD, TEST_SALT),
+        role: 'admin',
         status: 'active',
       },
     });

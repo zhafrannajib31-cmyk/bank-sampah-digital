@@ -14,6 +14,7 @@ import { WastePriceModule } from './modules/waste-prices/waste-prices.module';
 import { DepositModule } from './modules/deposits/deposit.module';
 import { TransactionModule } from './modules/transactions/transaction.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { RoleGuard } from './common/guards/roles.guard';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CommonModule } from './common/common.module';
@@ -43,6 +44,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     DepositModule,
     TransactionModule,
     ReportsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
