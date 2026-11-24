@@ -39,6 +39,13 @@ export class UnitService {
             effectiveFrom: true,
             effectiveTo: true,
             unitId: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+              },
+            },
           },
         },
       },
@@ -57,6 +64,13 @@ export class UnitService {
             effectiveFrom: true,
             effectiveTo: true,
             unitId: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+              },
+            },
           },
         },
       },
