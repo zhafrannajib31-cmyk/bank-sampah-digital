@@ -6,6 +6,8 @@ import {
   HttpStatus,
   Get,
   UseGuards,
+  Patch,
+  ConflictException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -15,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './guards/current-user.decorator';
 import { Public } from '../../common/public.decorator';
@@ -99,7 +102,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Profil pengguna yang sedang login' })
   @ApiResponse({ status: 200, description: 'Data pengguna' })
   @ApiResponse({ status: 401, description: 'Belum login' })
-  async me(@CurrentUser() user: { sub: string; email: string; name: string; role: string; status: string }) {
-    return user;
+  async me(@CurrentUser() identity: { sub: string }) {
+    return this.auth.getProfile(identity.sub);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Perbarui profil nasabah (nama, email, nomor telepon)' })
+  @ApiResponse({ status: 200, description: 'Profil diperbarui' })
+  @ApiResponse({ status: 400, description: 'Validasi gagal' })
+  @ApiResponse({ status: 409, description: 'Email atau nomor telepon sudah terdaftar' })
+  @ApiResponse({ status: 401, description: 'Belum login' })
+  async updateProfile(@CurrentUser() identity: { sub: string }, @Body() dto: UpdateProfileDto) {
+    return this.auth.updateProfile(identity.sub, dto);
   }
 }

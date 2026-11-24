@@ -179,6 +179,67 @@ export class AuthService {
     return tokens;
   }
 
+  /** Profil lengkap pengguna (digunakan /auth/me). */
+  async getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  /** Perbarui profil nasabah: nama, email, nomor telepon. */
+  async updateProfile(userId: string, data: { name?: string; email?: string; phone?: string }) {
+    if (data.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: { id: { not: userId }, email: data.email.toLowerCase() },
+      });
+      if (existing) {
+        throw new ConflictException({
+          message: 'Email sudah terdaftar',
+          code: 'DUPLICATE_CREDENTIALS',
+        });
+      }
+    }
+    if (data.phone) {
+      const existing = await this.prisma.user.findFirst({
+        where: { id: { not: userId }, phone: data.phone },
+      });
+      if (existing) {
+        throw new ConflictException({
+          message: 'Nomor telepon sudah terdaftar',
+          code: 'DUPLICATE_CREDENTIALS',
+        });
+      }
+    }
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: data.name,
+        email: data.email?.toLowerCase(),
+        phone: data.phone ?? null,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        saldo: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   private async issueTokens(userId: string, role: UserRole, status: UserStatus) {
     const accessToken = await this.jwt.signAsync(
       { sub: userId, role, status },

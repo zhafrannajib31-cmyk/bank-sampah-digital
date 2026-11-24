@@ -453,7 +453,7 @@ Selesai kalau:
 
 Catatan penyelesaian (19 Nov 2026): `lib/auth/session.ts` menyimpan `user`/`accessToken`/`refreshToken` di `localStorage` dan menulis cookie `bsd_session` (isi role) yang dibaca proxy; sesi dihapus otomatis saat 401 atau logout. Proxy tidak berubah — tetap memakai `resolveAccess`. Bukti (curl ke server dev 3000): `/nasabah` sebagai petugas → 307 `/petugas`, `/petugas` sebagai nasabah → 307 `/nasabah`, `/admin` sebagai petugas → 307, role cocok → 200, tanpa cookie → 307 `/login?next=...`, `/tentang` dan `/artikel` → 200 tanpa login. Catatan risiko: cookie hanya gating tampilan (bisa dipalsukan), akses data tetap ditentukan be-bsd (BSD-31).
 
-## [ ] BSD-35 · Profil nasabah
+## [/] BSD-35 · Profil nasabah
 **Zhafran** · S2 · 3 SP · Prasyarat: BSD-34
 
 Boleh sentuh: `be-bsd/src/modules/users/`, `fe-bsd/src/app/nasabah/profil/`
@@ -801,7 +801,7 @@ Selesai kalau:
 
 Catatan penyelesaian (23 Nov 2026): saldo tidak lagi dibaca dari `users.saldo` yang bisa basi, melainkan diagregasi dari baris transaksi `active`/`corrected` milik nasabah dari token (satu baris = satu kontribusi; kunci idempotensi BSD-60 mencegah baris ganda). Endpoint baru `GET /transactions/saldo` mengembalikan `saldo` + keterangan "Catatan nilai setoran, bukan dana yang dapat ditarik."; daftar/detail tetap menyertakan saldo yang sama. Test `test/transaction-saldo.e2e-spec.ts` 3 kasus; e2e 55/55, unit 5/5, tsc/lint/build lulus. Bukti curl 3001: nasabah A saldo 51000 (21000+24000+2400+3600; batal 5000 tidak ikut), nasabah tanpa transaksi saldo 0, petugas 403, token rusak 401.
 
-## [ ] BSD-67 · UI Riwayat, Detail, dan Saldo
+## [x] BSD-67 · UI Riwayat, Detail, dan Saldo
 **Zhafran** · S4 · 5 SP · Prasyarat: BSD-65, BSD-66
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/riwayat/`, `fe-bsd/src/app/nasabah/saldo/`
@@ -810,7 +810,7 @@ Selesai kalau:
 - [ ] Riwayat memuat jenis, berat aktual, harga/kg, nilai, waktu, dan status
 - [ ] Teks tidak menyiratkan uang dapat dicairkan
 
-## [ ] BSD-68 · Bukti transaksi
+## [x] BSD-68 · Bukti transaksi
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-65
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/riwayat/`, `be-bsd/src/modules/transactions/`
@@ -820,7 +820,7 @@ Prioritas P1.
 Selesai kalau:
 - [ ] Setelah selesai, detail transaksi dapat ditinjau kembali (FR-21)
 
-## [ ] BSD-69 · Riwayat unit untuk petugas
+## [x] BSD-69 · Riwayat unit untuk petugas
 **Zhafran** · S4 · 3 SP · Prasyarat: BSD-60
 
 Boleh sentuh: `be-bsd/src/modules/transactions/`, `fe-bsd/src/app/petugas/riwayat/`
@@ -834,7 +834,7 @@ Selesai kalau:
 
 # E10 · Dashboard dan laporan (Sprint 5, P1)
 
-## [ ] BSD-70 · API ringkasan dashboard petugas
+## [x] BSD-70 · API ringkasan dashboard petugas
 **Zhafran** · S5 · 3 SP · Prasyarat: BSD-60
 
 Boleh sentuh: `be-bsd/src/modules/reports/`
@@ -911,7 +911,7 @@ Selesai kalau:
 
 # E12 · PWA dan kualitas non-fungsional
 
-## [ ] BSD-78 · Konfigurasi PWA
+## [x] BSD-78 · Konfigurasi PWA
 **Zhafran** · S3 · 5 SP · Prasyarat: BSD-04
 
 Boleh sentuh: `fe-bsd/src/app/manifest.ts`, `fe-bsd/public/`, konfigurasi service worker
@@ -921,7 +921,7 @@ Selesai kalau:
 - [ ] Manifest, ikon, nama aplikasi, theme color, dan display mode lengkap
 - [ ] PWA dapat dibuka untuk role nasabah, petugas, dan admin sesuai hak akses
 
-## [ ] BSD-79 · Cache dan halaman offline dasar
+## [x] BSD-79 · Cache dan halaman offline dasar
 **Zhafran** · S5 · 3 SP · Prasyarat: BSD-78
 
 Boleh sentuh: konfigurasi service worker, `fe-bsd/src/app/offline/`

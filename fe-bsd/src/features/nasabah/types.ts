@@ -77,9 +77,11 @@ export interface Deposit {
 }
 
 export interface NasabahProfile {
+  id: string;
   name: string;
   phone: string;
   email: string;
-  address: string;
-  memberSince: string;
+  address?: string;
+  memberSince?: string;
+  createdAt: string;
 }

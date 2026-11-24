@@ -1,5 +1,5 @@
 import { request } from "@/lib/api";
-import type { BankUnit, Deposit, DepositDraft, DepositStatus, WasteCategory } from "./types";
+import type { BankUnit, Deposit, DepositDraft, DepositStatus, NasabahProfile, WasteCategory } from "./types";
 
 /** Bentuk respons be-bsd (angka desimal dikirim sebagai string). */
 export interface ApiUnit {
@@ -160,4 +160,11 @@ export const nasabahApi = {
     }),
   cancelDeposit: (id: string, reason: string) =>
     request<ApiDeposit>(`/deposits/${id}/batal`, { method: "PATCH", body: { reason } }),
+  /** Profil nasabah (read + update). */
+  profile: () => request<NasabahProfile>("/auth/me"),
+  updateProfile: (data: { name?: string; email?: string; phone?: string }) =>
+    request<NasabahProfile>("/auth/me", {
+      method: "PATCH",
+      body: data,
+    }),
 };
