@@ -342,5 +342,50 @@ describe('Auth API (e2e)', () => {
 
       expect(lastStatus).toBe(429);
     }, 30_000);
+
+  describe('RBAC & authorization (BSD-36)', () => {
+    it('endpoint publik tetap accesible tanpa token: GET /health', async () => {
+      await request(app.getHttpServer()).get('/health').expect(200);
+    });
+    it('endpoint publik: POST /auth/register tanpa token OK (role nasabah)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ name: 'Publik', email: `publ-${Date.now()}@contoh.test`, password: 'Password123!' })
+        .expect(201);
+      expect(res.body.user.role).toBe('nasabah');
+    });
+    it('protected endpoint without token → 401: GET /auth/me', async () => {
+      await request(app.getHttpServer()).get('/auth/me').expect(401);
+    });
+    it('protected endpoint without token → 401: POST /auth/logout', async () => {
+      await request(app.getHttpServer()).post('/auth/logout').send({}).expect(401);
+    });
+    it('nasabah tidak boleh akses route petugas: GET /petugas → 403', async () => {
+      await request(app.getHttpServer())
+        .get('/petugas')
+        .set('Authorization', `Bearer ${tokens.accessToken}`)
+        .expect(403);
+    });
+    it('petugas tidak boleh akses route admin: GET /admin → 403', async () => {
+      const petugasLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: 'e2e-petugas@contoh.test', password: TEST_PASSWORD })
+        .expect(200);
+      await request(app.getHttpServer())
+        .get('/admin')
+        .set('Authorization', `Bearer ${petugasLogin.body.accessToken}`)
+        .expect(403);
+    });
+    it('admin boleh akses /admin (200), bukan 403', async () => {
+      const adminLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: 'e2e-admin@contoh.test', password: TEST_PASSWORD })
+        .expect(200);
+      await request(app.getHttpServer())
+        .get('/admin')
+        .set('Authorization', `Bearer ${adminLogin.body.accessToken}`)
+        .expect(200);
+    });
+  });
   });
 });
