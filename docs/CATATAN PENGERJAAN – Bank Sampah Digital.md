@@ -18,7 +18,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-**Versi:** 1.0  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 19 November 2026
+**Versi:** 1.27  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 25 November 2026
 
 
 
@@ -103,7 +103,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-| Task selesai | 50 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62/63 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi, UI timbang/konfirmasi) selesai 19–22 Nov 2026, BSD-65 (API riwayat dan detail transaksi nasabah) dan BSD-66 (saldo/nilai akumulatif dari transaksi) selesai 23 Nov 2026 — E3 selesai, E4/E5/E7/E8/E9 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103 |
+| Task selesai | 58 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62/63 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi, UI timbang/konfirmasi) selesai 19–22 Nov 2026, BSD-65 (API riwayat dan detail transaksi nasabah) dan BSD-66 (saldo/nilai akumulatif dari transaksi) selesai 23 Nov 2026 — E3 selesai, E4/E5/E7/E8/E9 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103. Sinkronisasi 25 Nov 2026: BSD-44 diverifikasi dari kode detail unit yang sudah ada dan BSD-45 diselesaikan dengan validasi query + test filter; hitungan kini mengikuti centang backlog 58/103 |
 
 
 
@@ -168,7 +168,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-| E6 | Pencarian dan informasi Bank Sampah | 3 | 0 / 5 | Belum mulai |
+| E6 | Pencarian dan informasi Bank Sampah | 3 | 2 / 5 | Sedang berjalan (BSD-44 & BSD-45 selesai 25 Nov 2026; BSD-46/47/48 berikutnya) |
 
 
 
@@ -828,6 +828,20 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 
 
 
+| 25 Nov 2026 | BSD-44 | Verifikasi API detail unit: `GET /units/:id` memuat alamat, jam operasional, status, kategori, dan harga aktif (`prices` dengan `status: active` beserta `category`) dari commit `ab9835f`; kriteria FR-04/FR-06 terpenuhi. | Zhafran Najib | `be-bsd/src/modules/units/units.service.ts` (`findOne`); lint/build/test BE lulus | Selesai |
+
+
+
+
+
+
+| 25 Nov 2026 | BSD-45 | Query `GET /units` divalidasi lewat `QueryUnitsDto` (`search`, `area`, `publicationStatus`, `serviceStatus`; enum + pesan bahasa Indonesia); kata kunci di-trim di service, pencarian OR nama/alamat dan filter area/status layanan dipertahankan. Test filter 3 kasus ditambahkan. | Zhafran Najib | `be-bsd/src/modules/units/{dto/query-units.dto.ts,units.controller.ts,units.service.ts,units.filter.spec.ts}`; `npm test` 8/8 lulus, lint 3 warning lama, build lulus | Selesai |
+
+
+
+
+
+
 | *isi* |  |  |  |  |  |
 
 
@@ -874,6 +888,16 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 
 
 
+
+
+
+
+- [BSD-45][BE] Validasi query `GET /units` (`search`, `area`, `publicationStatus`, `serviceStatus`) dengan pesan bahasa Indonesia; pencarian nama/alamat dan filter area/status layanan diuji 3 kasus.
+
+
+
+
+- [BSD-44][BE] Detail unit memuat kategori dan harga aktif (verifikasi kriteria FR-04/FR-06).
 
 
 
@@ -1999,6 +2023,12 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 
 
 | 1.26 | 23 Nov 2026 | Selesaikan BSD-66: saldo diagregasi dari transaksi aktif/terkoreksi lewat `GET /transactions/saldo` dan respons riwayat/detail; test saldo 3 kasus; progres 50/103, E9 2/5 | Zhafran Najib |
+
+
+
+
+| 1.27 | 25 Nov 2026 | Verifikasi BSD-44 dan selesaikan BSD-45 (query DTO + test filter), centang keduanya di backlog; progres 58/103, E6 2/5 | Zhafran Najib |
+
 
 
 

@@ -17,6 +17,7 @@ import { Roles } from '../../common/guards/roles.decorator';
 import { UnitService } from './units.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
+import { QueryUnitsDto } from './dto/query-units.dto';
 
 @ApiTags('units')
 @Controller('units')
@@ -29,13 +30,13 @@ export class UnitController {
   @ApiResponse({ status: 401, description: 'Belum login' })
   @UseGuards(RoleGuard)
   @Roles('admin', 'petugas', 'nasabah')
-  async findAll(
-    @Query('search') search?: string,
-    @Query('area') area?: string,
-    @Query('publicationStatus') publicationStatus?: string,
-    @Query('serviceStatus') serviceStatus?: string,
-  ) {
-    return this.unitService.findAll(search, area, publicationStatus, serviceStatus);
+  async findAll(@Query() query: QueryUnitsDto) {
+    return this.unitService.findAll(
+      query.search,
+      query.area,
+      query.publicationStatus,
+      query.serviceStatus,
+    );
   }
 
   @Get(':id')

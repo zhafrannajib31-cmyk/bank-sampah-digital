@@ -549,15 +549,15 @@ Selesai kalau:
 
 # E6 · Pencarian dan informasi Bank Sampah (Sprint 3)
 
-## [ ] BSD-44 · API daftar dan detail unit
+## [x] BSD-44 · API daftar dan detail unit
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-39
 
 Boleh sentuh: `be-bsd/src/modules/units/`
 
 Selesai kalau:
-- [ ] Detail unit memuat alamat, jam, status, kategori, dan harga aktif (FR-04, FR-06)
+- [x] Detail unit memuat alamat, jam, status, kategori, dan harga aktif (FR-04, FR-06)
 
-## [ ] BSD-45 · API pencarian dan filter unit
+## [x] BSD-45 · API pencarian dan filter unit
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-44
 
 Boleh sentuh: `be-bsd/src/modules/units/`
@@ -565,7 +565,7 @@ Boleh sentuh: `be-bsd/src/modules/units/`
 Prioritas P1.
 
 Selesai kalau:
-- [ ] Cari berdasarkan nama dan area, filter status layanan (FR-05)
+- [x] Cari berdasarkan nama dan area, filter status layanan (FR-05)
 
 ## [ ] BSD-46 · Informasi jarak unit
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-44

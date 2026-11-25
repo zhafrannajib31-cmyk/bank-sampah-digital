@@ -14,17 +14,19 @@ export class UnitService {
     serviceStatus?: string,
   ) {
     const where: Record<string, unknown> = {};
+    const keyword = search?.trim();
+    const areaKeyword = area?.trim();
 
     if (publicationStatus) where.publicationStatus = publicationStatus;
     if (serviceStatus) where.serviceStatus = serviceStatus;
-    if (search) {
+    if (keyword) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
+        { name: { contains: keyword, mode: 'insensitive' } },
+        { address: { contains: keyword, mode: 'insensitive' } },
       ];
     }
-    if (area) {
-      where.address = { contains: area, mode: 'insensitive' };
+    if (areaKeyword) {
+      where.address = { contains: areaKeyword, mode: 'insensitive' };
     }
 
     return this.prisma.bankSampahUnit.findMany({
