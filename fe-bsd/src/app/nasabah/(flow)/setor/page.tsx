@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Asset, EmptyState } from "@/components/ui";
+import { useEffect, useMemo, useState } from "react";
+import { Asset, EmptyState, LoadingState } from "@/components/ui";
 import { formatDistance } from "@/features/nasabah/format";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import { StepNext } from "@/features/nasabah/step-screen";
@@ -43,6 +43,13 @@ export default function PilihUnitPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("semua");
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // shortcut: data prototype sinkron, jeda ini hanya untuk menampilkan state loading; hapus saat memakai API.
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const visible = useMemo(() => applyFilter(units, filter, query), [units, filter, query]);
   // Unit terpilih: pilihan pengguna, atau unit buka pertama pada hasil.
@@ -111,28 +118,32 @@ export default function PilihUnitPage() {
         </div>
       </header>
 
-      <section className="flex-1 bg-canvas px-5 pt-[14px] pb-6" aria-label="Daftar unit">
-        <div className="mx-auto flex w-full max-w-[1072px] flex-col gap-[10px]">
-          <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
-            {visible.length} unit ditemukan · data simulasi
-          </p>
-          {visible.length === 0 ? (
-            <EmptyState title="Unit tidak ditemukan" description="Ubah kata kunci atau filter." />
-          ) : (
-            <ul className="grid grid-cols-1 gap-[12.5px] md:grid-cols-2 lg:grid-cols-3">
-              {visible.map((unit) => (
-                <li key={unit.id} className="flex">
-                  <UnitCard
-                    unit={unit}
-                    selected={selected?.id === unit.id}
-                    onSelect={() => setPickedId(unit.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+      {loading ? (
+        <LoadingState label="Memuat unit…" className="m-5" />
+      ) : (
+        <section className="flex-1 bg-canvas px-5 pt-[14px] pb-6" aria-label="Daftar unit">
+          <div className="mx-auto flex w-full max-w-[1072px] flex-col gap-[10px]">
+            <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
+              {visible.length} unit ditemukan · data simulasi
+            </p>
+            {visible.length === 0 ? (
+              <EmptyState title="Unit tidak ditemukan" description="Ubah kata kunci atau filter." />
+            ) : (
+              <ul className="grid grid-cols-1 gap-[12.5px] md:grid-cols-2 lg:grid-cols-3">
+                {visible.map((unit) => (
+                  <li key={unit.id} className="flex">
+                    <UnitCard
+                      unit={unit}
+                      selected={selected?.id === unit.id}
+                      onSelect={() => setPickedId(unit.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="sticky bottom-0 z-10 border-t border-line bg-surface">
         <div className="mx-auto flex w-full max-w-[1072px] flex-col gap-3 px-5 pt-3 pb-4">

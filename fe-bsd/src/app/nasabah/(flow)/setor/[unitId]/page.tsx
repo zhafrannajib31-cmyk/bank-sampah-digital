@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Asset, ErrorState } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Asset, ErrorState, LoadingState } from "@/components/ui";
 import { formatDistance, formatRupiah } from "@/features/nasabah/format";
 import { PRICE_EFFECTIVE_DATE } from "@/features/nasabah/mock-data";
 import { usePrototype } from "@/features/nasabah/prototype-store";
@@ -17,6 +18,22 @@ const steps = [
 export default function DetailUnitPage() {
   const { unitId } = useParams<{ unitId: string }>();
   const { units, categories } = usePrototype();
+  const [loading, setLoading] = useState(true);
+
+  // shortcut: data prototype sinkron, jeda ini hanya untuk menampilkan state loading; hapus saat memakai API.
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-surface">
+        <LoadingState label="Memuat unit…" />
+      </div>
+    );
+  }
+
   const unit = units.find((candidate) => candidate.id === unitId);
 
   if (!unit) {
