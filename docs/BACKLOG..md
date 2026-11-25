@@ -577,14 +577,14 @@ Prioritas P1.
 Selesai kalau:
 - [ ] Jarak tampil hanya bila izin lokasi dan koordinat unit tersedia
 
-## [ ] BSD-47 · Halaman Home, Daftar, dan Detail Bank Sampah
+## [x] BSD-47 · Halaman Home, Daftar, dan Detail Bank Sampah
 **Zhafran** · S3 · 8 SP · Prasyarat: BSD-44, BSD-34
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/`, `fe-bsd/src/components/`
 
 Selesai kalau:
-- [ ] Alamat, jam operasional, status, dan petunjuk setoran tampil (TC-02)
-- [ ] Ada loading, empty, dan error state
+- [x] Alamat, jam operasional, status, dan petunjuk setoran tampil (TC-02)
+- [x] Ada loading, empty, dan error state
 
 ## [ ] BSD-48 · UI pencarian dan filter
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-45, BSD-47
