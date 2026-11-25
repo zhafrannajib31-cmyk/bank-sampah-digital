@@ -586,7 +586,7 @@ Selesai kalau:
 - [x] Alamat, jam operasional, status, dan petunjuk setoran tampil (TC-02)
 - [x] Ada loading, empty, dan error state
 
-## [ ] BSD-48 · UI pencarian dan filter
+## [x] BSD-48 · UI pencarian dan filter
 **Zhafran** · S3 · 3 SP · Prasyarat: BSD-45, BSD-47
 
 Boleh sentuh: `fe-bsd/src/app/nasabah/`
@@ -594,7 +594,9 @@ Boleh sentuh: `fe-bsd/src/app/nasabah/`
 Prioritas P1.
 
 Selesai kalau:
-- [ ] Hasil sesuai kata kunci dan filter
+- [x] Hasil sesuai kata kunci dan filter
+
+Catatan penyelesaian (25 Nov 2026): Pencarian nama/alamat dan filter "Buka Sekarang" dikirim ke `GET /units` (BSD-45) dengan debounce 250 ms dan abort untuk query yang usang. Filter "Menerima Logam" dan "Terdekat" tetap diproses di klien karena tidak ada query BE untuk keduanya. Hasil dipetakan ke `BankUnit` dengan kategori aktif unit; state loading, empty, error, dan retry tetap tersedia. Bukti: `npm run build` 50 route lulus, `tsc --noEmit` bersih, lint 0 error (16 warning lama).
 
 ---
 

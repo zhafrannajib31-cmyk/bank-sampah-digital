@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Asset, EmptyState, ErrorState } from "@/components/ui";
+import { nasabahApi, toUnit, type ApiUnit } from "@/features/nasabah/api";
 import { formatDistance } from "@/features/nasabah/format";
 import { usePrototype } from "@/features/nasabah/prototype-store";
 import { StepNext } from "@/features/nasabah/step-screen";
 import type { BankUnit } from "@/features/nasabah/types";
+import { userMessage } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
 type Filter = "semua" | "buka" | "terdekat" | "logam";
@@ -37,10 +39,52 @@ function applyFilter(
 }
 
 export default function PilihUnitPage() {
-  const { units, categories, isLoading, error, reload } = usePrototype();
+  const { units, categories, categoriesForUnit, isLoading, error, reload } = usePrototype();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("semua");
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<ApiUnit[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  const keyword = query.trim();
+  const serviceStatus = filter === "buka" ? "open" : undefined;
+
+  const resetSearch = () => {
+    setSearchResults(null);
+    setSearchError(null);
+    setSearching(false);
+  };
+
+  useEffect(() => {
+    if (!keyword && !serviceStatus) return;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setSearching(true);
+      setSearchError(null);
+      void nasabahApi
+        .units(
+          { search: keyword, publicationStatus: "published", serviceStatus },
+          controller.signal,
+        )
+        .then(setSearchResults)
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted) return;
+          setSearchError(userMessage(cause));
+          setSearchResults(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setSearching(false);
+        });
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [keyword, serviceStatus, attempt]);
 
   const categoryNames = useMemo(
     () => Object.fromEntries(categories.map((category) => [category.id, category.name])),
@@ -51,9 +95,21 @@ export default function PilihUnitPage() {
     [categories],
   );
 
+  const sourceUnits = useMemo(() => {
+    if (!searchResults) return units;
+    return searchResults
+      .filter((unit) => unit.publicationStatus === "published")
+      .map((unit) =>
+        toUnit(
+          unit,
+          categoriesForUnit(unit.id).map((category) => category.id),
+        ),
+      );
+  }, [searchResults, units, categoriesForUnit]);
+
   const visible = useMemo(
-    () => applyFilter(units, filter, query, logamIds),
-    [units, filter, query, logamIds],
+    () => applyFilter(sourceUnits, filter, query, logamIds),
+    [sourceUnits, filter, query, logamIds],
   );
   // Unit terpilih: pilihan pengguna, atau unit buka pertama pada hasil.
   const selected =
@@ -90,7 +146,11 @@ export default function PilihUnitPage() {
             <input
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                setQuery(next);
+                if (!next.trim() && filter !== "buka") resetSearch();
+              }}
               placeholder="Cari nama unit atau alamat"
               className="min-w-0 flex-1 bg-transparent text-[14px] text-heading placeholder:text-[#7a7e7b] focus:outline-none"
             />
@@ -106,7 +166,10 @@ export default function PilihUnitPage() {
                 key={item.id}
                 type="button"
                 aria-pressed={filter === item.id}
-                onClick={() => setFilter(item.id)}
+                onClick={() => {
+                  setFilter(item.id);
+                  if (!keyword && item.id !== "buka") resetSearch();
+                }}
                 className={cn(
                   "h-8 shrink-0 rounded-[20px] border px-[14px] text-[12px] whitespace-nowrap text-heading focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                   filter === item.id
@@ -123,15 +186,24 @@ export default function PilihUnitPage() {
 
       <section className="flex-1 bg-canvas px-5 pt-[14px] pb-6" aria-label="Daftar unit">
         <div className="mx-auto flex w-full max-w-[1072px] flex-col gap-[10px]">
-          <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
-            {visible.length} unit ditemukan
-          </p>
-          {isLoading ? (
+          {!isLoading && !searching ? (
             <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
-              Memuat daftar unit…
+              {visible.length} unit ditemukan
             </p>
-          ) : error ? (
-            <ErrorState title="Daftar unit gagal dimuat" description={error} onRetry={reload} />
+          ) : null}
+          {isLoading || searching ? (
+            <p className="text-[12px] leading-[16px] text-subtle" aria-live="polite">
+              {isLoading ? "Memuat daftar unit…" : "Mencari unit…"}
+            </p>
+          ) : error || searchError ? (
+            <ErrorState
+              title="Daftar unit gagal dimuat"
+              description={error ?? searchError ?? undefined}
+              onRetry={() => {
+                if (error) reload();
+                if (searchError) setAttempt((value) => value + 1);
+              }}
+            />
           ) : visible.length === 0 ? (
             <EmptyState title="Unit tidak ditemukan" description="Ubah kata kunci atau filter." />
           ) : (

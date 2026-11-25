@@ -18,7 +18,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-**Versi:** 1.27  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 25 November 2026
+**Versi:** 1.29  |  **Dibuat:** 11 November 2026  |  **Pengelola:** Project Manager  |  **Terakhir diperbarui:** 25 November 2026
 
 
 
@@ -103,7 +103,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-| Task selesai | 59 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62/63 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi, UI timbang/konfirmasi) selesai 19–22 Nov 2026, BSD-65 (API riwayat dan detail transaksi nasabah) dan BSD-66 (saldo/nilai akumulatif dari transaksi) selesai 23 Nov 2026 — E3 selesai, E4/E5/E7/E8/E9 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103. Sinkronisasi 25 Nov 2026: BSD-44 diverifikasi dari kode detail unit yang sudah ada dan BSD-45 diselesaikan dengan validasi query + test filter; BSD-47 diverifikasi dari kode halaman setor yang sudah ada; hitungan kini mengikuti centang backlog 59/103 |
+| Task selesai | 60 dari 103 task backlog (BSD-01 s.d. BSD-17 selesai; dokumen perencanaan, design system, dan prototype nasabah selesai, lihat bagian 4). BSD-21 s.d. BSD-31 dan BSD-37–39 (fondasi backend, auth, RBAC, CRUD unit & kategori, API harga) selesai 17–22 Nov 2026, BSD-33–34 (auth FE) selesai 19 Nov 2026, lalu BSD-49/50/52/53/55 (API pengajuan setoran + estimasi nilai, layar setor nasabah, daftar pengajuan petugas per unit yang membaca API sungguhan) selesai 18–19 Nov 2026, serta BSD-56/57/58/59/60/61/62/63 (penerimaan pengajuan, timbang aktual, snapshot harga, kalkulasi nilai server, konfirmasi atomik/idempotent, jejak perubahan status, pembatalan/koreksi pasca-konfirmasi, UI timbang/konfirmasi) selesai 19–22 Nov 2026, BSD-65 (API riwayat dan detail transaksi nasabah) dan BSD-66 (saldo/nilai akumulatif dari transaksi) selesai 23 Nov 2026 — E3 selesai, E4/E5/E7/E8/E9 berjalan. Ralat hitungan 22 Nov 2026: BSD-64 sudah dicentang di backlog sejak 18 Nov 2026 tetapi sebelumnya tidak ikut dihitung, sehingga progres lama 43/103 seharusnya 44/103. Sinkronisasi 25 Nov 2026: BSD-44 diverifikasi dari kode detail unit yang sudah ada dan BSD-45 diselesaikan dengan validasi query + test filter; BSD-47 diverifikasi dari kode halaman setor yang sudah ada; BSD-48 menghubungkan pencarian/filter UI ke `GET /units`; hitungan kini mengikuti centang backlog 60/103 |
 
 
 
@@ -168,7 +168,7 @@ Log kerja proyek: task yang sudah dikerjakan, perubahan yang dilakukan, keputusa
 
 
 
-| E6 | Pencarian dan informasi Bank Sampah | 3 | 3 / 5 | Sedang berjalan (BSD-44, BSD-45, BSD-47 selesai 25 Nov 2026; BSD-46/48 berikutnya) |
+| E6 | Pencarian dan informasi Bank Sampah | 3 | 4 / 5 | Sedang berjalan (BSD-44, BSD-45, BSD-47, BSD-48 selesai 25 Nov 2026; BSD-46 berikutnya) |
 
 
 
@@ -844,6 +844,8 @@ Urutan terbaru di bawah. Format kolom: tanggal, ID task, uraian pekerjaan, pelak
 
 | 25 Nov 2026 | BSD-47 | Verifikasi halaman Daftar/Detail bank sampah: daftar memakai loading, empty, dan error state dari `usePrototype()` (error ada tombol retry); detail menampilkan alamat, jam operasional, status Buka/Tutup, harga aktif berlabel simulasi, dan petunjuk "Cara menyetor ke unit ini" (TC-02). Tidak ada perubahan kode. | Zhafran Najib | `fe-bsd/src/app/nasabah/(flow)/setor/{page.tsx,[unitId]/page.tsx}`, `fe-bsd/src/features/nasabah/prototype-store.tsx`; `npm run build` 50 route lulus, `tsc --noEmit` bersih, lint 0 error (16 warning lama) | Selesai |
 
+| 25 Nov 2026 | BSD-48 | Pencarian nama/alamat dan filter "Buka Sekarang" dikirim ke `GET /units` lewat `nasabahApi.units({ search, publicationStatus, serviceStatus }, signal)` dengan debounce 250 ms dan abort permintaan usang; filter "Menerima Logam"/"Terdekat" tetap di klien. Hasil dipetakan dengan kategori aktif unit; loading/empty/error + retry tetap tersedia. | Zhafran Najib | `fe-bsd/src/features/nasabah/api.ts`, `fe-bsd/src/app/nasabah/(flow)/setor/page.tsx`; `npm run build` 50 route lulus, `tsc --noEmit` bersih, lint 0 error (16 warning lama) | Selesai |
+
 
 
 
@@ -900,6 +902,7 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 
 
 - [BSD-47][FE] Halaman daftar/detail bank sampah terverifikasi: state loading/empty/error (dengan retry) dan informasi alamat, jam, status, serta petunjuk setoran sesuai TC-02.
+- [BSD-48][FE] Pencarian dan filter unit memanggil `GET /units` dengan `search`/`serviceStatus` (debounce 250 ms, abort, retry); filter logam/terdekat tetap di klien dan hasil memakai kategori aktif unit.
 
 
 
@@ -2038,6 +2041,8 @@ Format mengikuti Keep a Changelog. Versi mengikuti Semantic Versioning (0.x.y se
 
 
 
+
+| 1.29 | 25 Nov 2026 | Selesaikan BSD-48: pencarian/filter UI memakai query `GET /units` (BSD-45) dengan debounce + abort, retry error, dan pemetaan kategori aktif; progres 60/103, E6 4/5 | Zhafran Najib |
 
 | 1.28 | 25 Nov 2026 | Verifikasi BSD-47 (state loading/empty/error + TC-02 pada halaman setor), centang di backlog tanpa perubahan kode; progres 59/103, E6 3/5 | Zhafran Najib |
 

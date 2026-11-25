@@ -1,6 +1,13 @@
 import { request } from "@/lib/api";
 import type { BankUnit, Deposit, DepositDraft, DepositStatus, NasabahProfile, WasteCategory } from "./types";
 
+/** Query daftar unit yang didukung be-bsd (BSD-45). */
+export interface UnitQuery {
+  search?: string;
+  publicationStatus?: "draft" | "published" | "unpublished";
+  serviceStatus?: "open" | "closed" | "temporarily_closed";
+}
+
 /** Bentuk respons be-bsd (angka desimal dikirim sebagai string). */
 export interface ApiUnit {
   id: string;
@@ -138,7 +145,15 @@ export function resolvePrice(
 }
 
 export const nasabahApi = {
-  units: () => request<ApiUnit[]>("/units"),
+  units: (query: UnitQuery = {}, signal?: AbortSignal) => {
+    const params = new URLSearchParams();
+    const search = query.search?.trim();
+    if (search) params.set("search", search);
+    if (query.publicationStatus) params.set("publicationStatus", query.publicationStatus);
+    if (query.serviceStatus) params.set("serviceStatus", query.serviceStatus);
+    const suffix = params.toString();
+    return request<ApiUnit[]>(`/units${suffix ? `?${suffix}` : ""}`, { signal });
+  },
   categories: () => request<ApiCategory[]>("/waste-categories"),
   prices: () => request<ApiPrice[]>("/waste-prices"),
   deposits: () => request<ApiDeposit[]>("/deposits"),
